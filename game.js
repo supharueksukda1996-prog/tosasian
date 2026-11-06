@@ -237,7 +237,7 @@
   async function makeStory() {
     const s = state.result, holder = state.nick || "ผู้ฝึกหัด";
     const font = (weight, size, family = "Sarabun") => `${weight} ${size}px ${family}, "Noto Sans Thai", sans-serif`;
-    try { await Promise.all([document.fonts.load("700 80px Charmonman"), document.fonts.load("700 40px Sarabun"), document.fonts.load("400 40px Sarabun")]); } catch (e) { /* ใช้ฟอนต์สำรอง */ }
+    try { await Promise.all([document.fonts.load("700 80px Charmonman", "ม้วนคัมภีร์"), document.fonts.load("700 40px Sarabun", "สำนัก"), document.fonts.load("500 40px Sarabun", "สำนัก")]); } catch (e) { /* ใช้ฟอนต์สำรอง */ }
     const c = document.createElement("canvas");
     c.width = 1080; c.height = 1920;
     const x = c.getContext("2d");

@@ -102,7 +102,7 @@ const ENGINE = (() => {
       for (const r of rows) {
         const s = GAME.specialties.find(x => x.id === r.id);
         if (!s) continue;
-        for (const key of ["name", "guild", "item", "trait", "fortune", "ask", "skill", "img", "hero", "heroRare"]) if (r[key]) s[key] = r[key];
+        for (const key of ["name", "th", "real", "guild", "item", "trait", "fortune", "ask", "skill", "img", "hero", "heroRare"]) if (r[key]) s[key] = r[key];
         for (const d of dims()) s.profile[d] = num(r[d], s.profile[d]);
         s.bias = num(r.bias, s.bias);
       }

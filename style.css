@@ -88,7 +88,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .dark .more { color: #d9c7ac; }
 .ask { display: block; font-size: 1.04rem; line-height: 1.45; font-weight: 700; }
 .options { display: grid; gap: 7px; margin-top: 10px; }
-.option { width: 100%; min-height: 48px; padding: 8px 12px; text-align: left; line-height: 1.38; font-size: .98rem; background: #fffdf6; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; animation: rise .4s cubic-bezier(.2, .8, .2, 1) both; }
+.option { width: 100%; min-height: 48px; padding: 8px 12px; text-align: left; line-height: 1.38; font-size: .98rem; color: var(--ink); background: #fffdf6; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; animation: rise .4s cubic-bezier(.2, .8, .2, 1) both; }
 .option:nth-child(2) { animation-delay: .06s; }
 .option:nth-child(3) { animation-delay: .12s; }
 @media (hover: hover) { .option:hover { border-color: var(--sage); background: #f3f6ee; } }
@@ -96,14 +96,18 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .talk { display: flex; align-items: stretch; gap: 8px; }
 .talk .dialog { flex: 1; min-width: 0; }
 .face { flex: 0 0 84px; align-self: flex-end; height: 84px; border-radius: 16px; overflow: hidden; background: #2a2620; box-shadow: 0 8px 22px rgba(0, 0, 0, .55), 0 0 0 2px var(--gold-soft); }
-.face img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.face.enter { animation: slide .4s cubic-bezier(.2, .9, .3, 1.2) both; }
+.face img { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: 50% 100%; animation: breathe 2.8s ease-in-out infinite; }
+.face.nod { animation: nod .45s ease-out; }
+.face.enter { animation: hop .6s cubic-bezier(.2, .9, .3, 1.3) both; }
 .dark .face { box-shadow: 0 8px 22px rgba(0, 0, 0, .7), 0 0 0 2px #d9583a; }
 .talk + .btn { margin-top: 10px; }
 .reveal-wrap { display: flex; flex-direction: column; gap: 10px; }
 
 .option.picked { border-color: var(--sage); background: #eef5ef; }
 .option:disabled { cursor: default; }
+.dark .option { color: #fbefdc; background: rgba(52, 30, 30, .96); border-color: rgba(230, 120, 90, .55); }
+.dark .option.picked { background: #6a2a1e; border-color: #ff9c74; }
+.dark .ask { color: #fff3e2; }
 .gain { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 .gain span { padding: 1px 8px; border-radius: 999px; background: var(--sage); color: #fff; font-size: .78rem; font-weight: 700; animation: pop .4s cubic-bezier(.3, 1.7, .5, 1) both; }
 .hero-sub { margin-top: 10px !important; font-size: .95rem !important; font-weight: 500 !important; }
@@ -148,6 +152,17 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 
 .panel { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: var(--paper); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: rise .6s .7s both; }
 .trait { margin: 0 0 8px; line-height: 1.5; font-size: .95rem; }
+.you-are { margin: 0 0 8px; font-size: 1.15rem; line-height: 1.4; }
+.you-are b { color: var(--sage-deep); }
+.real { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: #eef4ec; font-size: .95rem; line-height: 1.5; }
+.real b { display: block; font-size: 1.05rem; color: var(--sage-deep); }
+.real small { font-weight: 500; color: var(--ink-soft); font-size: .8rem; }
+.why { margin: 4px 0 0; padding: 0; list-style: none; }
+.why li { margin: 2px 0; }
+.why em { margin-left: 0; }
+.trait em { font-style: normal; font-weight: 700; color: var(--sage-deep); margin: 0 4px; }
+.mission b { display: block; font-size: .8rem; color: #f2c07a; }
+.mission q { display: block; margin-top: 4px; font-weight: 500; }
 .trait b, .ask-teacher b { display: block; font-size: .82rem; color: var(--sage-deep); }
 .divider { height: 0; margin: 12px 0; border-top: 1.5px dashed var(--line); }
 .ask-teacher { margin-top: 10px; font-size: .95rem; line-height: 1.5; }
@@ -167,6 +182,9 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
 @keyframes slide { from { opacity: 0; transform: translateX(-18px) scale(.86); } to { opacity: 1; transform: none; } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045) translateY(-2px); } }
+@keyframes nod { 0% { transform: none; } 35% { transform: translateY(-6px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(2deg); } 100% { transform: none; } }
+@keyframes hop { 0% { opacity: 0; transform: translateY(30px) scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: translateY(-8px) scale(1.06) rotate(3deg); } 100% { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
 @keyframes pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.16); } }
 @keyframes flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }

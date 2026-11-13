@@ -20,8 +20,8 @@ const dims = ENGINE.dims();
 write("settings.csv", [["key", "value", "หมายเหตุ"],
   ...Object.entries(GAME.settings).map(([k, v]) => [k, v, k === "rareRate" ? "โอกาสได้การ์ด Rare 0 ถึง 1" : ""])]);
 
-write("specialties.csv", [["id", "name", "guild", ...dims, "bias", "item", "trait", "fortune", "ask", "img", "hero", "heroRare"],
-  ...GAME.specialties.map(s => [s.id, s.name, s.guild, ...dims.map(d => s.profile[d]), s.bias, s.item, s.trait, s.fortune, s.ask, s.img, s.hero, s.heroRare])]);
+write("specialties.csv", [["id", "name", "th", "real", "guild", ...dims, "bias", "item", "trait", "fortune", "ask", "img", "hero", "heroRare"],
+  ...GAME.specialties.map(s => [s.id, s.name, s.th, s.real, s.guild, ...dims.map(d => s.profile[d]), s.bias, s.item, s.trait, s.fortune, s.ask, s.img, s.hero, s.heroRare])]);
 
 write("questions.csv", [["q", "ask", "option", "text", ...dims],
   ...ENGINE.questions().flatMap(q => q.options.map((o, i) => [q.id, i === 0 ? q.ask : "", "ABC"[i], o.text, ...dims.map(d => (o.score && o.score[d]) || "")]))]);

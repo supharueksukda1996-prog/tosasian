@@ -67,10 +67,11 @@
 
   // กล่องข้อความพร้อมรูปผู้พูดด้านข้าง จะขยับเข้ามาเฉพาะตอนเปลี่ยนผู้พูด
   let lastSpeaker = "";
-  function talkHTML(who, inner) {
-    const face = GAME.speakers[who];
-    const html = face ? `<div class="face ${who === lastSpeaker ? "" : "enter"}"><img src="${esc(face)}" alt="${esc(who)}"></div>` : "";
-    lastSpeaker = who || "";
+  function talkHTML(who, inner, text = "") {
+    const key = who || Object.keys(GAME.speakers).find(k => text.includes(k)) || "";
+    const face = GAME.speakers[key];
+    const html = face ? `<div class="face ${key === lastSpeaker ? "nod" : "enter"}"><img src="${esc(face)}" alt="${esc(key)}"></div>` : "";
+    lastSpeaker = key;
     return `<div class="talk">${html}${inner}</div>`;
   }
 
@@ -91,7 +92,7 @@
       let n = 0;
       const render = () => {
         const [who, text] = beats[n];
-        shell(chapter, talkHTML(who, `<button class="dialog" type="button" id="beat">${lineHTML(who, text)}<span class="more">แตะเพื่ออ่านต่อ</span></button>`));
+        shell(chapter, talkHTML(who, `<button class="dialog" type="button" id="beat">${lineHTML(who, text)}<span class="more">แตะเพื่ออ่านต่อ</span></button>`, text));
         document.getElementById("beat").addEventListener("click", () => {
           n++;
           if (n < beats.length) render();
@@ -192,6 +193,11 @@
       </article>`;
   }
 
+  // สองด้านที่ผู้เล่นได้คะแนนสูงสุด ใช้อธิบายว่าทำไมได้การ์ดใบนี้
+  function topDims() {
+    return GAME.dimensions.slice().sort((a, b) => (state.profile[b.id] || 0) - (state.profile[a.id] || 0)).slice(0, 2);
+  }
+
   function showResult() {
     const s = state.result;
     stage.innerHTML = `
@@ -199,11 +205,12 @@
         <p class="result-kicker">${state.rare ? "โชคเข้าข้าง! คุณได้การ์ด Rare" : "การ์ดผู้เยียวยาของคุณ"}</p>
         ${cardHTML()}
         <div class="panel">
-          <p class="trait"><b>บุคลิก</b>${esc(s.trait)}</p>
-          <p class="trait"><b>ใกล้เคียงรองลงมา</b>${esc(state.runnerUp.name)} · ${esc(state.runnerUp.guild)}</p>
-          <div class="divider"></div>
-          <p class="mission">ไปคุยกับอาจารย์ที่ซุ้ม ${esc(s.name)} เพื่อรับภารกิจต่อ</p>
-          <div class="ask-teacher"><b>คำถามชวนคุยกับอาจารย์</b>${esc(s.ask)}</div>
+          <p class="you-are">คุณคือ <b>${esc(s.guild)}</b></p>
+          <div class="real"><b>${esc(s.th || s.name)} <small>${esc(s.name)}</small></b>${esc(s.real || "")}</div>
+          <div class="trait"><b>ทำไมได้การ์ดนี้</b>คำตอบของคุณเด่น 2 ด้าน<ul class="why">${topDims().map(d => `<li><em>${esc(d.name)}</em>${esc(d.desc)}</li>`).join("")}</ul></div>
+          <p class="trait"><b>นิสัยแบบนี้</b>${esc(s.trait)}</p>
+          <p class="trait"><b>อีกสาขาที่เข้ากับคุณ</b>${esc(state.runnerUp.th || state.runnerUp.name)} (${esc(state.runnerUp.name)})</p>
+          <div class="mission"><b>ภารกิจต่อไป</b>แวะซุ้ม ${esc(s.name)} แล้วลองถามอาจารย์ว่า<q>${esc(s.ask)}</q></div>
           <p class="disclaimer">ออกแบบจากแนวคิดงานวิจัยด้านความสนใจอาชีพและการเลือกสาขา เพื่อความสนุก ไม่ใช่การวัดทางวิชาการ</p>
         </div>
         <div class="actions">

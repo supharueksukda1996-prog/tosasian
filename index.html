@@ -7,10 +7,26 @@
 <meta name="description" content="ร่วมกองทัพในฐานะผู้เยียวยา ตอบคำถามระหว่างทาง แล้วรับการ์ดที่บอกว่าคุณเหมาะกับสาขาไหน">
 <meta name="theme-color" content="#1b1a20">
 <meta name="robots" content="noindex">
+<!-- ภาพและข้อความตัวอย่างเวลาแปะลิงก์ใน LINE, Facebook, Messenger -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://supharueksukda1996-prog.github.io/tosasian/">
+<meta property="og:title" content="ศึกทศเศียร · การ์ดผู้เยียวยาของคุณคือสาขาไหน?">
+<meta property="og:description" content="เกมงานจบแล้วไปไหน คณะแพทยศาสตร์ มข. ตอบ 16 คำถามระหว่างการเดินทาง แล้วเปิดการ์ดผู้เยียวยาที่เป็นตัวคุณ ลุ้นการ์ด Rare!">
+<meta property="og:image" content="https://supharueksukda1996-prog.github.io/tosasian/art/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="art/characters/puikan.webp?v=202611132339">
+<script>
+  // เปิดจาก LINE ให้เด้งไปเบราว์เซอร์หลัก จะได้แชร์ลงสตอรี่ได้
+  if (/\bLine\//i.test(navigator.userAgent) && location.search.indexOf("openExternalBrowser") < 0) {
+    location.replace(location.pathname + (location.search ? location.search + "&" : "?") + "openExternalBrowser=1");
+  }
+</script>
 <script>
   // ถ้าเครื่องผู้เล่นยังจำหน้าเก่าไว้ ให้โหลดหน้าใหม่เอง (เลขต้องตรงกับไฟล์ version.txt)
   (function () {
-    var mine = "202611132334";
+    var mine = "202611132339";
     fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : mine; }).then(function (latest) {
       latest = latest.trim();
       if (latest && latest !== mine && location.search.indexOf("v=" + latest) < 0) location.replace(location.pathname + "?v=" + latest);
@@ -20,17 +36,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Charmonman:wght@400;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611132334">
+<link rel="stylesheet" href="style.css?v=202611132339">
 </head>
 <body>
 <canvas id="view" aria-hidden="true"></canvas>
 <div class="dim" id="dim" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 <div class="pack" id="pack" hidden></div>
+<button class="skip" id="skip" type="button" hidden>ข้ามบทพูด ⏭</button>
 <main id="stage" aria-live="polite"></main>
-<script src="data.js?v=202611132334"></script>
-<script src="engine.js?v=202611132334"></script>
-<script src="scenes.js?v=202611132334"></script>
-<script src="game.js?v=202611132334"></script>
+<script src="data.js?v=202611132339"></script>
+<script src="engine.js?v=202611132339"></script>
+<script src="scenes.js?v=202611132339"></script>
+<script src="game.js?v=202611132339"></script>
 </body>
 </html>

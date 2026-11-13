@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>โปสเตอร์ QR ศึกทศเศียร</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Charmonman:wght@700&family=Sarabun:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  /* โปสเตอร์ A4 แนวตั้ง กด Ctrl+P หรือแชร์ > พิมพ์ แล้วเลือกกระดาษ A4 ไม่มีขอบ */
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #2a2018; }
+  body { font-family: "Sarabun", sans-serif; color: #3a2a12; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tip { max-width: 210mm; margin: 12px auto; padding: 10px 14px; border-radius: 10px; background: #fff4d6; font-size: 15px; line-height: 1.5; }
+  .page {
+    position: relative; width: 210mm; height: 297mm; margin: 0 auto 24px; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; text-align: center; padding: 16mm 14mm 12mm;
+    background: radial-gradient(120% 70% at 50% 0%, #fff6dc 0%, #f6dfa6 55%, #e3b55c 100%);
+  }
+  .page::before {
+    content: ""; position: absolute; inset: 6mm; border: 2.5mm solid #c98f2c; border-radius: 8mm; pointer-events: none;
+    box-shadow: inset 0 0 0 1.2mm #fff4d0, inset 0 0 0 2mm #c98f2c;
+  }
+  .host { margin: 0; font-weight: 700; font-size: 15pt; letter-spacing: .02em; }
+  .event { margin: 9mm 0 0; font: 700 50pt/1.1 "Charmonman", serif; color: #8a4c0c; text-shadow: 0 1mm 0 #fff4d0; }
+  .game { margin: 1mm 0 0; font-weight: 800; font-size: 22pt; color: #2f5a44; }
+  .lead { margin: 2mm 0 0; font-weight: 500; font-size: 14pt; }
+  .cards { position: relative; width: 150mm; height: 82mm; margin: 6mm 0 4mm; }
+  .cards img { position: absolute; top: 4mm; width: 46mm; border-radius: 4mm; border: 1.6mm solid #f0c45c; box-shadow: 0 3mm 6mm rgba(90, 50, 0, .35); }
+  .cards img:nth-child(1) { left: 14mm; transform: rotate(-9deg); }
+  .cards img:nth-child(2) { left: 50%; top: 0; width: 52mm; margin-left: -26mm; z-index: 2; }
+  .cards img:nth-child(3) { right: 14mm; transform: rotate(9deg); }
+  .scan { display: flex; align-items: center; gap: 8mm; margin-top: 2mm; padding: 6mm 8mm; border-radius: 8mm; background: #fffaf0; box-shadow: 0 2mm 6mm rgba(90, 50, 0, .25); }
+  .scan img { width: 62mm; height: 62mm; image-rendering: pixelated; }
+  .steps { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 15pt; line-height: 1.45; }
+  .steps li { display: flex; gap: 3mm; align-items: baseline; margin: 2.5mm 0; }
+  .steps b { flex: 0 0 auto; display: inline-grid; place-items: center; width: 9mm; height: 9mm; border-radius: 50%; background: #2f5a44; color: #fff; font-size: 12pt; }
+  .rare { margin: 7mm 0 0; font-weight: 800; font-size: 17pt; color: #8a4c0c; }
+  .url { margin: 2mm 0 0; font-weight: 700; font-size: 12pt; color: #5a4320; word-break: break-all; }
+  .tag { margin-top: auto; font-weight: 800; font-size: 16pt; color: #2f5a44; }
+  @media print { html, body { background: none; } .tip { display: none; } .page { margin: 0; } }
+</style>
+</head>
+<body>
+<p class="tip">โปสเตอร์ A4 สำหรับติดหน้าบูธหรือจุดลงทะเบียน กด Ctrl+P (มือถือ: แชร์ › พิมพ์) เลือกกระดาษ A4 ปิด "หัวกระดาษและท้ายกระดาษ" และเปิด "กราฟิกพื้นหลัง" แล้วบันทึกเป็น PDF หรือสั่งพิมพ์ได้เลย</p>
+<section class="page">
+  <p class="host">คณะแพทยศาสตร์ มหาวิทยาลัยขอนแก่น</p>
+  <h1 class="event">จบแล้วไปไหน</h1>
+  <p class="game">ศึกทศเศียร · การ์ดผู้เยียวยาของคุณคือสาขาไหน?</p>
+  <p class="lead">ออกเดินทางกับกองทัพ ตอบ 16 คำถาม แล้วเปิดการ์ดที่เป็นตัวคุณ</p>
+  <div class="cards">
+    <img src="art/cards/ped-rare.webp" alt="">
+    <img src="art/cards/surg-rare.webp" alt="">
+    <img src="art/cards/psych-rare.webp" alt="">
+  </div>
+  <div class="scan">
+    <img src="art/qr.png" alt="QR เข้าเล่นเกม">
+    <ol class="steps">
+      <li><b>1</b>สแกน QR ด้วยกล้องมือถือ</li>
+      <li><b>2</b>ตอบคำถาม 16 ข้อระหว่างทาง</li>
+      <li><b>3</b>รับการ์ดแล้วแชร์ลงสตอรี่<br>แท็กเพื่อนในกองทัพ</li>
+    </ol>
+  </div>
+  <p class="rare">✨ ลุ้นการ์ด Rare เรืองแสง! ✨</p>
+  <p class="url">supharueksukda1996-prog.github.io/tosasian</p>
+  <p class="tag">#จบแล้วไปไหน</p>
+</section>
+</body>
+</html>

@@ -1,6 +1,17 @@
 (() => {
   const stage = document.getElementById("stage");
   const pack = document.getElementById("pack");
+  const skip = document.getElementById("skip");
+
+  // ชื่อแอปที่เปิดเว็บอยู่ข้างใน ซึ่งมักแชร์ไฟล์ลงสตอรี่ไม่ได้ (LINE เด้งไปเบราว์เซอร์หลักให้เองแล้ว)
+  function inAppName() {
+    const ua = navigator.userAgent;
+    if (/Instagram/i.test(ua)) return "Instagram";
+    if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return "Facebook";
+    if (/TikTok|musical_ly|Bytedance/i.test(ua)) return "TikTok";
+    if (/Line\//i.test(ua)) return "LINE";
+    return "";
+  }
   const dim = document.getElementById("dim");
   const flash = document.getElementById("flash");
   const QUEUE_KEY = "aurelen-queue";
@@ -34,6 +45,7 @@
               ${GAME.audience.map(a => `<option>${esc(a)}</option>`).join("")}
             </select>
           </label>` : ""}
+          ${inAppName() ? `<p class="inapp">กำลังเปิดใน ${inAppName()} ซึ่งแชร์การ์ดลงสตอรี่ไม่ได้ แนะนำกด <b>⋯</b> มุมขวาบน แล้วเลือก <b>เปิดในเบราว์เซอร์</b> ก่อนเริ่มเล่น</p>` : ""}
           <button class="btn" type="submit">เข้าร่วมกองทัพ</button>
           ${GAME.endpoint ? `<p class="notice">ผู้จัดงานเก็บชั้นปี คำตอบ และผลลัพธ์แบบไม่ระบุตัวตน เพื่อใช้ปรับปรุงกิจกรรม ชื่อบนการ์ดจะไม่ถูกส่งออกจากเครื่อง การกดเริ่มถือว่ายินยอมตามนี้</p>` : ""}
         </form>
@@ -91,14 +103,18 @@
 
   function playBeats(chapter, beats) {
     return new Promise(resolve => {
-      let n = 0;
+      let n = 0, done = false;
+      const finish = () => { if (!done) { done = true; skip.hidden = true; resolve(); } };
+      skip.onclick = finish;
+      skip.hidden = beats.length < 2;
       const render = () => {
+        if (done) return;
         const [who, text] = beats[n];
         shell(chapter, talkHTML(who, `<button class="dialog" type="button" id="beat">${lineHTML(who, text)}<span class="more">แตะเพื่ออ่านต่อ</span></button>`, text));
         document.getElementById("beat").addEventListener("click", () => {
           n++;
           if (n < beats.length) render();
-          else resolve();
+          else finish();
         });
       };
       render();
@@ -214,6 +230,7 @@
           <p class="trait"><b>อีกสาขาที่เข้ากับคุณ</b>${esc(state.runnerUp.th || state.runnerUp.name)} (${esc(state.runnerUp.name)})</p>
           <div class="mission"><b>ภารกิจต่อไป</b>แวะซุ้ม ${esc(s.name)} แล้วลองถามอาจารย์ว่า<q>${esc(s.ask)}</q></div>
           <p class="disclaimer">ออกแบบจากแนวคิดงานวิจัยด้านความสนใจอาชีพและการเลือกสาขา เพื่อความสนุก ไม่ใช่การวัดทางวิชาการ</p>
+          <p class="disclaimer">เรื่องและตัวละครแต่งขึ้นใหม่ โดยได้แรงบันดาลใจจากวรรณคดีรามายณะและรามเกียรติ์ ภาพประกอบสร้างด้วย AI ใน Canva</p>
         </div>
         <div class="actions">
           <button class="btn" type="button" id="save" disabled>กำลังเตรียมการ์ดสำหรับสตอรี่...</button>

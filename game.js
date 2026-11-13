@@ -12,7 +12,7 @@
     try { muted = localStorage.getItem("music-muted") === "1"; } catch (e) { /* ไม่มีที่เก็บ */ }
     const vol = () => Math.max(0, Math.min(1, Number(S().musicVolume) || .45));
     const paint = () => {
-      btn.hidden = !mode;
+      btn.hidden = !GAME.settings.music;
       btn.textContent = muted ? "🔇" : "🔊";
       btn.setAttribute("aria-pressed", String(!muted));
       btn.setAttribute("aria-label", muted ? "เปิดเพลง" : "ปิดเพลง");
@@ -34,8 +34,30 @@
       if (mode === "synth" && window.Synth) Synth.start(v);
       if (mode === "file") fadeFile(v, ms);
     };
+    // ไฟล์ WAV เงียบสั้น ๆ ที่เล่นวนไว้ ทำให้ iPhone ถือว่ากำลังเล่นสื่อ จึงไม่ตัดเสียงตอนเปิดโหมดเงียบ
+    let keepAlive = null;
+    function silentWav() {
+      const n = 4000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+      const w = (o, str) => [...str].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+      w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+      w(36, "data"); v.setUint32(40, n, true);
+      for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+      return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+    }
+    function unlockIOS() {
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* รุ่นเก่า */ }
+      if (!keepAlive) {
+        keepAlive = new Audio(silentWav());
+        keepAlive.loop = true;
+        keepAlive.setAttribute("playsinline", "");
+      }
+      keepAlive.play().catch(() => {});
+    }
     function useSynth() {
       if (!window.Synth) return;
+      unlockIOS();
       audio = null; mode = "synth"; paint();
       Synth.start(muted ? 0 : vol());
     }
@@ -52,7 +74,14 @@
         if (!muted) fadeFile(vol());
       } else useSynth();
     }
-    btn.addEventListener("click", () => {
+    const firstTouch = e => {
+      if (e && btn.contains(e.target)) return;
+      ["touchend", "click", "keydown"].forEach(ev => document.removeEventListener(ev, firstTouch, true));
+      start();
+    };
+    ["touchend", "click", "keydown"].forEach(ev => document.addEventListener(ev, firstTouch, true));
+    btn.addEventListener("click", e => {
+      if (!mode) { e.stopPropagation(); muted = false; start(); paint(); return; }
       muted = !muted;
       try { localStorage.setItem("music-muted", muted ? "1" : "0"); } catch (e) { /* ไม่มีที่เก็บ */ }
       paint();
@@ -61,11 +90,15 @@
     // พักเพลงเมื่อสลับแอปหรือปิดจอ แล้วเล่นต่อเมื่อกลับมา
     document.addEventListener("visibilitychange", () => {
       if (!mode || muted) return;
-      if (mode === "synth") document.hidden ? Synth.pause() : Synth.resume();
+      if (mode === "synth") {
+        if (document.hidden) { Synth.pause(); if (keepAlive) keepAlive.pause(); }
+        else { Synth.resume(); if (keepAlive) keepAlive.play().catch(() => {}); }
+      }
       else if (audio) document.hidden ? audio.pause() : audio.play().catch(() => {});
     });
     // เปลี่ยนอารมณ์เพลงตามฉาก (ใช้กับดนตรีสังเคราะห์)
     const mood = key => { if (mode === "synth") Synth.mood(key); };
+    paint();
     return { start, mood };
   })();
 

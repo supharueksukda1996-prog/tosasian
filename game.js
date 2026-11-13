@@ -4,17 +4,20 @@
   const skip = document.getElementById("skip");
 
   // ---------- เพลงประกอบ ----------
-  // เริ่มเล่นหลังผู้เล่นกดเริ่ม (มือถือไม่ให้เล่นเสียงเอง) และจำว่าผู้เล่นปิดเสียงไว้หรือไม่
+  // settings.music = "synth" ใช้ดนตรีอินเดียที่สร้างสดใน music.js, ใส่ชื่อไฟล์เพื่อเล่นไฟล์เพลงแทน, เว้นว่างเพื่อปิดเพลง
+  // เริ่มหลังผู้เล่นกดเริ่ม (มือถือไม่ให้เล่นเสียงเอง) และจำว่าผู้เล่นปิดเสียงไว้หรือไม่
   const Music = (() => {
     const btn = document.getElementById("sound");
-    let audio = null, muted = false;
+    let audio = null, mode = "", muted = false;
     try { muted = localStorage.getItem("music-muted") === "1"; } catch (e) { /* ไม่มีที่เก็บ */ }
+    const vol = () => Math.max(0, Math.min(1, Number(S().musicVolume) || .45));
     const paint = () => {
+      btn.hidden = !mode;
       btn.textContent = muted ? "🔇" : "🔊";
       btn.setAttribute("aria-pressed", String(!muted));
       btn.setAttribute("aria-label", muted ? "เปิดเพลง" : "ปิดเพลง");
     };
-    const fadeTo = (target, ms = 900) => {
+    const fadeFile = (target, ms = 900) => {
       const a = audio;
       if (!a) return;
       const from = a.volume, t0 = performance.now();
@@ -27,31 +30,43 @@
       if (target > 0 && a.paused) a.play().catch(() => {});
       step();
     };
-    const vol = () => Math.max(0, Math.min(1, Number(S().musicVolume) || .45));
+    const level = (v, ms) => {
+      if (mode === "synth" && window.Synth) Synth.start(v);
+      if (mode === "file") fadeFile(v, ms);
+    };
+    function useSynth() {
+      if (!window.Synth) return;
+      audio = null; mode = "synth"; paint();
+      Synth.start(muted ? 0 : vol());
+    }
     function start() {
-      if (!S().music) return;
-      if (!audio) {
-        audio = new Audio(S().music);
+      const src = S().music;
+      if (!src || mode) return;
+      if (/\.(mp3|m4a|aac|ogg|wav)$/i.test(src)) {
+        mode = "file";
+        audio = new Audio(src);
         audio.loop = true; audio.preload = "auto"; audio.volume = 0;
-        audio.addEventListener("error", () => { btn.hidden = true; audio = null; });
-        audio.addEventListener("playing", () => { btn.hidden = false; }, { once: true });
-      }
-      paint();
-      if (!muted) fadeTo(vol());
+        // ไฟล์โหลดไม่ได้ ให้ใช้ดนตรีสังเคราะห์แทน
+        audio.addEventListener("error", () => { mode = ""; useSynth(); });
+        paint();
+        if (!muted) fadeFile(vol());
+      } else useSynth();
     }
     btn.addEventListener("click", () => {
       muted = !muted;
       try { localStorage.setItem("music-muted", muted ? "1" : "0"); } catch (e) { /* ไม่มีที่เก็บ */ }
       paint();
-      if (audio) fadeTo(muted ? 0 : vol(), 400);
-      else if (!muted) start();
+      level(muted ? 0 : vol(), 400);
     });
     // พักเพลงเมื่อสลับแอปหรือปิดจอ แล้วเล่นต่อเมื่อกลับมา
     document.addEventListener("visibilitychange", () => {
-      if (!audio || muted) return;
-      if (document.hidden) audio.pause(); else audio.play().catch(() => {});
+      if (!mode || muted) return;
+      if (mode === "synth") document.hidden ? Synth.pause() : Synth.resume();
+      else if (audio) document.hidden ? audio.pause() : audio.play().catch(() => {});
     });
-    return { start };
+    // เปลี่ยนอารมณ์เพลงตามฉาก (ใช้กับดนตรีสังเคราะห์)
+    const mood = key => { if (mode === "synth") Synth.mood(key); };
+    return { start, mood };
   })();
 
   // ชื่อแอปที่เปิดเว็บอยู่ข้างใน ซึ่งมักแชร์ไฟล์ลงสตอรี่ไม่ได้ (LINE เด้งไปเบราว์เซอร์หลักให้เองแล้ว)
@@ -144,6 +159,7 @@
   async function playChapter(i, first) {
     const chapter = GAME.chapters[i];
     stage.innerHTML = "";
+    Music.mood(chapter.scene);
     if (!first || chapter.scene !== 0) await Scenes.go(chapter.scene);
     if (chapter.quake) { await wait(500); Scenes.shake(); }
     await playBeats(chapter, chapter.beats);
@@ -212,6 +228,7 @@
   }
 
   async function reveal() {
+    Music.mood("triumph");
     state.profile = ENGINE.profileOf(state.picks);
     const ranking = ENGINE.rank(state.profile);
     state.result = ranking[0].s;

@@ -31,7 +31,7 @@ const GAME = {
     "พระฤๅษี": "art/characters/elder.webp?v=2",
     "นางพยากรณ์": "art/characters/witch.webp?v=2",
     "หญิงชาวประมง": "art/characters/mother.webp?v=2",
-    "ทศเศียร": "art/characters/demon.webp",
+    "ทศเศียร": "art/characters/demon.webp?v=2",
     "เจ้าชายทิตย์": "art/characters/prince.webp?v=2",
     "พญาวายุ": "art/characters/vayu.webp?v=2",
   },

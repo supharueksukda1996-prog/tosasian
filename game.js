@@ -68,7 +68,9 @@
   // กล่องข้อความพร้อมรูปผู้พูดด้านข้าง จะขยับเข้ามาเฉพาะตอนเปลี่ยนผู้พูด
   let lastSpeaker = "";
   function talkHTML(who, inner, text = "") {
-    const key = who || Object.keys(GAME.speakers).find(k => text.includes(k)) || "";
+    // บทบรรยายจะโชว์ตัวละครที่ถูกเอ่ยชื่อก่อนในประโยค
+    const named = Object.keys(GAME.speakers).filter(k => text.includes(k)).sort((a, b) => text.indexOf(a) - text.indexOf(b));
+    const key = who || named[0] || "";
     const face = GAME.speakers[key];
     const html = face ? `<div class="face ${key === lastSpeaker ? "nod" : "enter"}"><img src="${esc(face)}" alt="${esc(key)}"></div>` : "";
     lastSpeaker = key;

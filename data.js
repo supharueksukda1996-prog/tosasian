@@ -19,7 +19,7 @@ const GAME = {
     eventDate: "15 พฤศจิกายน 2569",
     eventTag: "#จบแล้วไปไหน",
     // ลิงก์ที่ให้คนเห็นสตอรี่กดมาเล่น และรูป QR ของลิงก์นี้ (ถ้าเปลี่ยนลิงก์ต้องทำรูป QR ใหม่ด้วย)
-    playUrl: "https://supharueksukda1996-prog.github.io/aurelen-game/",
+    playUrl: "https://supharueksukda1996-prog.github.io/tosasian/",
     qr: "art/qr.png",
   },
 

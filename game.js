@@ -3,6 +3,57 @@
   const pack = document.getElementById("pack");
   const skip = document.getElementById("skip");
 
+  // ---------- เพลงประกอบ ----------
+  // เริ่มเล่นหลังผู้เล่นกดเริ่ม (มือถือไม่ให้เล่นเสียงเอง) และจำว่าผู้เล่นปิดเสียงไว้หรือไม่
+  const Music = (() => {
+    const btn = document.getElementById("sound");
+    let audio = null, muted = false;
+    try { muted = localStorage.getItem("music-muted") === "1"; } catch (e) { /* ไม่มีที่เก็บ */ }
+    const paint = () => {
+      btn.textContent = muted ? "🔇" : "🔊";
+      btn.setAttribute("aria-pressed", String(!muted));
+      btn.setAttribute("aria-label", muted ? "เปิดเพลง" : "ปิดเพลง");
+    };
+    const fadeTo = (target, ms = 900) => {
+      const a = audio;
+      if (!a) return;
+      const from = a.volume, t0 = performance.now();
+      const step = () => {
+        if (audio !== a) return;
+        const k = Math.min(1, (performance.now() - t0) / ms);
+        a.volume = from + (target - from) * k;
+        if (k < 1) requestAnimationFrame(step); else if (target === 0) a.pause();
+      };
+      if (target > 0 && a.paused) a.play().catch(() => {});
+      step();
+    };
+    const vol = () => Math.max(0, Math.min(1, Number(S().musicVolume) || .45));
+    function start() {
+      if (!S().music) return;
+      if (!audio) {
+        audio = new Audio(S().music);
+        audio.loop = true; audio.preload = "auto"; audio.volume = 0;
+        audio.addEventListener("error", () => { btn.hidden = true; audio = null; });
+        audio.addEventListener("playing", () => { btn.hidden = false; }, { once: true });
+      }
+      paint();
+      if (!muted) fadeTo(vol());
+    }
+    btn.addEventListener("click", () => {
+      muted = !muted;
+      try { localStorage.setItem("music-muted", muted ? "1" : "0"); } catch (e) { /* ไม่มีที่เก็บ */ }
+      paint();
+      if (audio) fadeTo(muted ? 0 : vol(), 400);
+      else if (!muted) start();
+    });
+    // พักเพลงเมื่อสลับแอปหรือปิดจอ แล้วเล่นต่อเมื่อกลับมา
+    document.addEventListener("visibilitychange", () => {
+      if (!audio || muted) return;
+      if (document.hidden) audio.pause(); else audio.play().catch(() => {});
+    });
+    return { start };
+  })();
+
   // ชื่อแอปที่เปิดเว็บอยู่ข้างใน ซึ่งมักแชร์ไฟล์ลงสตอรี่ไม่ได้ (LINE เด้งไปเบราว์เซอร์หลักให้เองแล้ว)
   function inAppName() {
     const ua = navigator.userAgent;
@@ -59,6 +110,7 @@
       state.session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       pack.hidden = false;
       renderProgress();
+      Music.start();
       playChapter(0, true);
     });
   }

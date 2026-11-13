@@ -279,149 +279,105 @@
   // ---------- ฉากทั้งเจ็ด ----------
   // ภาพและสิ่งที่ผูกกับภาพใช้ความลึก 0.5 เท่ากัน เพื่อไม่ให้เลื่อนหลุดตำแหน่งเมื่อกล้องขยับ
   const SCENES = [
-    { key: "ceremony", title: "พิธีจบใต้ต้นกัลปพฤกษ์", line: "ใต้ต้นไม้พันปี คุณรับม้วนคัมภีร์ชะตาที่ยังว่างเปล่า",
-      painting: "art/ceremony.webp",
-      cam: { x: [-.008, .004], y: [.01, 0], zoom: [1.14, 1.0] },
+    { key: "ceremony", title: "ลานพระราชวังอโยธยา", line: "",
+      painting: "art/scenes/ceremony.webp",
+      cam: { x: [0, 0], y: [.01, 0], zoom: [1.14, 1.0] },
       build(add, map) {
-        add(.5, fxRays(map.point(768, 538), "rgba(255,214,150,.26)", 11, { from: 2.5, to: 3.9 }));
-        add(.5, (c, t) => { const s = map.point(768, 538); glow(c, s.x, s.y, VW * (.34 + Math.sin(t * .5) * .025), "rgba(255,218,140,.6)"); });
-        add(.5, fxFlicker(map, [[101, 781], [153, 786], [205, 787], [255, 790], [302, 792], [352, 795], [403, 797], [450, 798], [492, 800]], "rgba(255,190,90,.9)", 30));
-        add(.5, fxTwinkle(map, 14, 21, 640, 740, 790, 790));
-        add(.62, fxMotes(16, 8, "rgba(255,224,150,.8)", { yMin: .28, yMax: .62, size: 6 }));
-        add(.8, fxPetals(46, 6));
-        add(1.1, fxPetals(10, 16, ["#ffd5e0", "#f7a8c2"], { speed: 1.6 }));
+        const sun = map.point(472, 630);
+        add(.5, (c, t) => glow(c, sun.x, sun.y, VW * (.32 + Math.sin(t * .5) * .025), "rgba(255,214,150,.6)"));
+        add(.5, fxRays(sun, "rgba(255,220,160,.24)", 10, { from: 3.6, to: 5.8, len: 1.1 }));
+        add(.5, fxFlicker(map, [[276, 410], [588, 410], [60, 640], [136, 660], [212, 660], [652, 660], [724, 660], [800, 640]], "rgba(255,190,90,.9)", 34));
+        add(.5, fxTwinkle(map, 12, 21, 20, 820, 840, 880));
+        add(.62, fxMotes(16, 8, "rgba(255,224,150,.8)", { yMin: .25, yMax: .6, size: 6 }));
+        add(.9, fxPetals(30, 6, ["#ffc7d8", "#ffe0e8", "#ffd27a"]));
       } },
 
-    { key: "bridge", title: "สะพานเหนือหุบเหว", line: "สะพานหินโบราณทอดข้ามเมฆ ลูกมังกรปีกเจ็บกำลังบินโซเซมาหาคุณ",
-      painting: "art/bridge.webp",
-      cam: { x: [.004, -.004], y: [-.02, .01], zoom: [1.0, 1.12] },
+    { key: "bridge", title: "ช่องเขาเหนือทะเลเมฆ", line: "",
+      painting: "art/scenes/bridge.webp",
+      cam: { x: [0, 0], y: [-.02, .01], zoom: [1.0, 1.12] },
       build(add, map) {
-        add(.42, fxFog(5, 22, "rgba(255,255,255,.62)", .34, .5, { alpha: .2, w: .9 }));
-        add(.5, fxFalls(map, [
-          { x: 125, x1: 205, y0: 512, y1: 1125, w: 62 },
-          { x: 752, x1: 700, y0: 502, y1: 1040, w: 44 },
-          { x: 440, y0: 625, y1: 735, w: 10 },
-        ]));
-        add(.5, fxBirds(7, 3, "rgba(46,62,90,.6)", .1, .3));
-        add(.5, (c, t) => {
-          // ลูกมังกรปีกเจ็บ บินวนโซเซหน้าสะพาน
-          const k = t * .3, a = map.point(430 + Math.sin(k) * 250, 345 + Math.sin(k * 1.7) * 55 + Math.abs(Math.sin(t * 1.7)) * 13);
-          drawDragon(c, a.x, a.y, 15, t * .85, "#a84a3d", "rgba(214,120,84,.95)", Math.cos(k) >= 0 ? 1 : -1);
-        });
-        add(.72, fxFog(7, 91, "rgba(255,255,255,.72)", .62, .88, { alpha: .46, w: 1.35 }));
-        add(1.05, fxFog(4, 52, "rgba(255,255,255,.6)", .8, .98, { alpha: .46, w: 1.7 }));
+        add(.5, fxFalls(map, [{ x: 120, y0: 640, y1: 980, w: 30 }, { x: 750, y0: 640, y1: 980, w: 30 }]));
+        add(.5, fxBirds(7, 3, "rgba(46,62,90,.55)", .06, .22));
+        add(.5, fxTwinkle(map, 8, 5, 0, 300, 864, 560));
+        add(.6, fxFog(6, 22, "rgba(255,255,255,.7)", .62, .8, { alpha: .45, w: 1.2 }));
+        add(1.05, fxFog(4, 52, "rgba(255,255,255,.6)", .78, .92, { alpha: .5, w: 1.6 }));
+        add(.9, fxPetals(14, 9, ["#ffffff", "#ffe6ef", "#fff2c2"], { speed: .7 }));
       } },
 
-    { key: "forest", title: "ป่าหมอกเงา", line: "ต้นไม้เก่าแก่สูงเสียดฟ้าบดบังดวงจันทร์ แสงทุกดวงในมือคุณดับลง",
-      painting: "art/forest.webp",
+    { key: "forest", title: "ป่าทัณฑกะ", line: "",
+      painting: "art/scenes/forest.webp",
       cam: { x: [0, .004], y: [.012, -.012], zoom: [1.0, 1.15] },
       build(add, map) {
-        const moon = map.point(568, 75);
-        add(.5, (c, t) => glow(c, moon.x, moon.y, VW * (.27 + Math.sin(t * .4) * .02), "rgba(190,235,255,.66)"));
-        add(.5, fxRays(moon, "rgba(190,240,250,.22)", 7, { from: 1.42, to: 2.15, len: 1.15 }));
-        add(.5, fxFog(5, 8, "rgba(165,235,232,.46)", .28, .54, { alpha: .22, w: 1.05 }));
-        add(.5, fxFlicker(map, [[77, 605], [170, 682], [207, 715], [178, 738], [231, 742], [258, 742], [301, 781], [400, 846], [608, 846], [726, 828], [743, 806]], "rgba(100,255,225,.72)", 44, { speed: 1.1, depth: .5 }));
-        add(.55, (c, t) => {
-          // ดวงตาที่เฝ้ามองจากเงามืด
-          const pulse = .5 + .5 * Math.sin(t * .55), blink = Math.sin(t * .27) > .94 ? 0 : 1;
-          [[772, 962], [800, 960]].forEach(([x, y]) => {
+        const moon = map.point(144, 20);
+        add(.5, (c, t) => glow(c, moon.x, moon.y, VW * (.25 + Math.sin(t * .4) * .02), "rgba(190,235,255,.6)"));
+        add(.5, fxRays(moon, "rgba(190,240,250,.2)", 6, { from: .7, to: 1.3, len: 1.2 }));
+        add(.5, fxFlicker(map, [[50, 740], [140, 790], [230, 800], [260, 590], [500, 810], [536, 730], [410, 930], [660, 930], [820, 800]], "rgba(100,255,225,.72)", 48, { speed: 1.1, depth: .5 }));
+        add(.5, (c, t) => {
+          // ดวงตาในโพรงไม้ ลืมช้า ๆ แล้วกะพริบ
+          const pulse = .55 + .45 * Math.sin(t * .55), blink = Math.sin(t * .27) > .94 ? 0 : 1;
+          [[430, 414], [458, 414]].forEach(([x, y]) => {
             const p = map.point(x, y);
-            glow(c, p.x, p.y, 13, "rgba(255,190,90,.9)", pulse * blink);
-            c.fillStyle = `rgba(255,244,190,${pulse * blink})`; c.beginPath(); c.ellipse(p.x, p.y, 2.6, 1.5 * blink + .1, 0, 0, 7); c.fill();
+            glow(c, p.x, p.y, 16, "rgba(255,170,70,.95)", pulse * blink);
           });
         });
-        add(.68, fxMotes(30, 12, "rgba(110,255,230,.9)", { yMin: .22, yMax: .7, size: 7 }));
-        add(.72, fxFog(5, 18, "rgba(120,215,218,.42)", .5, .72, { alpha: .3, w: 1.2 }));
-        add(1.05, fxFog(5, 28, "rgba(90,170,175,.42)", .68, .95, { alpha: .5, w: 1.6 }));
+        add(.68, fxMotes(30, 12, "rgba(110,255,230,.9)", { yMin: .2, yMax: .62, size: 7 }));
+        add(1.05, fxFog(5, 28, "rgba(90,170,175,.4)", .66, .92, { alpha: .45, w: 1.6 }));
       } },
 
-    { key: "market", title: "ตลาดใต้แสงจันทร์", line: "โคมนับพันลอยขึ้นสู่แสงเหนือ แม่มดเฒ่าเล่าเรื่องที่คุณทำในป่าราวกับเห็นมาเอง",
-      painting: "art/market.webp",
+    { key: "market", title: "นครวานรยามค่ำ", line: "",
+      painting: "art/scenes/market.webp",
       cam: { x: [.004, -.004], y: [-.014, .012], zoom: [1.13, 1.0] },
       build(add, map) {
-        const moon = map.point(678, 122);
-        add(.5, fxAurora(map, [
-          { color: "rgb(90,255,180)", x: -20, y: 40, w: 340, h: 370 },
-          { color: "rgb(130,110,255)", x: 180, y: 20, w: 260, h: 340 },
-          { color: "rgb(205,110,240)", x: 680, y: 80, w: 220, h: 300 },
-        ]));
-        add(.5, fxTwinkle(map, 34, 4, 0, 10, 864, 340));
-        add(.5, (c, t) => glow(c, moon.x, moon.y, VW * (.38 + Math.sin(t * .4) * .02), "rgba(255,244,214,.5)"));
-        add(.5, fxSkyLanterns(26, 22, .72, .03));
-        add(.5, fxFalls(map, [{ x: 473, y0: 672, y1: 738, w: 14 }]));
+        const moon = map.point(700, 120);
+        add(.5, fxTwinkle(map, 30, 4, 250, 10, 864, 300));
+        add(.5, (c, t) => glow(c, moon.x, moon.y, VW * (.34 + Math.sin(t * .4) * .02), "rgba(255,244,200,.5)"));
+        add(.5, fxSkyLanterns(22, 22, .62, .03));
         add(.5, fxFlicker(map, [
-          [197, 690], [762, 755, 1.2], [597, 925], [548, 935], [495, 935], [358, 966], [425, 996], [473, 1006], [555, 1018], [593, 1015],
-          [176, 1012, 1.2], [690, 1056, 1.1], [105, 1050], [133, 1012], [253, 885], [270, 1064], [625, 1042], [665, 1034],
-        ], "rgba(255,172,76,.92)", 46, { speed: 3.6 }));
-        add(.5, fxFlicker(map, [[15, 640], [90, 645], [840, 665], [388, 846], [210, 562], [70, 450]], "rgba(255,190,100,.5)", 54, { speed: 1.5, depth: .25 }));
-        add(.72, fxMotes(22, 41, "rgba(255,200,120,.85)", { yMin: .42, yMax: .72, size: 5 }));
+          [36, 330], [340, 360], [300, 660], [560, 600], [750, 710], [830, 680], [740, 420], [200, 480], [480, 840], [680, 870], [600, 960],
+        ], "rgba(255,172,76,.92)", 46, { speed: 3.4 }));
+        add(.72, fxMotes(18, 41, "rgba(255,200,120,.8)", { yMin: .4, yMax: .66, size: 5 }));
       } },
 
-    { key: "lake", title: "หมู่บ้านริมทะเลสาบ", line: "รุ่งสางแรกแต้มยอดเขาเป็นสีชมพู ผืนน้ำนิ่งจนเป็นกระจกสะท้อนฟ้า",
-      painting: "art/lake.webp",
+    { key: "lake", title: "ฝั่งทะเลก่อนข้ามสู่ลังกา", line: "",
+      painting: "art/scenes/lake.webp",
       cam: { x: [-.006, .004], y: [.008, -.004], zoom: [1.1, 1.0] },
       build(add, map) {
-        const sun = map.point(50, 293);
-        add(.5, fxWater(map, 762, 1536));
-        add(.5, fxRays(sun, "rgba(255,216,170,.22)", 9, { from: -.5, to: .75, len: 1.25 }));
-        add(.5, (c, t) => glow(c, sun.x, sun.y, VW * (.3 + Math.sin(t * .5) * .02), "rgba(255,216,160,.62)"));
-        add(.5, fxFalls(map, [{ x: 363, y0: 540, y1: 606, w: 16 }]));
-        add(.5, fxSmoke(map, 628, 648));
-        add(.5, fxFlicker(map, [[272, 800], [272, 858], [730, 720], [800, 720], [850, 722], [640, 715], [525, 722], [725, 625], [760, 625]], "rgba(255,186,96,.72)", 26, { speed: 2.4 }));
-        add(.5, fxFlicker(map, [[700, 845], [790, 840], [640, 830], [540, 830]], "rgba(255,180,96,.42)", 30, { speed: 2 }));
-        add(.5, fxWake(map, 170, 838));
-        add(.5, fxBirds(10, 8, "rgba(74,50,84,.62)", .1, .28));
-        add(.58, fxFog(4, 15, "rgba(255,232,220,.4)", .46, .5, { alpha: .13, w: .85 }));
-        add(.76, fxMotes(9, 9, "rgba(255,226,175,.75)", { yMin: .38, yMax: .6, size: 5 }));
+        add(.5, fxWater(map, 760, 1536));
+        add(.5, fxFlicker(map, [[330, 624]], "rgba(255,190,100,.85)", 34, { speed: 2.4 }));
+        add(.5, fxTwinkle(map, 16, 9, 200, 560, 700, 1100));
+        add(.5, fxBirds(9, 8, "rgba(74,50,84,.55)", .06, .22));
+        add(.58, fxFog(5, 15, "rgba(255,232,220,.5)", .4, .5, { alpha: .2, w: 1 }));
+        add(.9, fxPetals(10, 31, ["#ffc7d8", "#ffe0e8"], { speed: .6 }));
       } },
 
-    { key: "city", title: "นครออเรเลน", line: "เมื่อม่านเมฆเปิดออก นครหินขาวก็ปรากฏ ม้วนคัมภีร์ในมือเริ่มเรืองแสง",
-      painting: "art/city.webp",
+    { key: "city", title: "นครโอสถบนเขาสัญชีวนี", line: "",
+      painting: "art/scenes/city.webp",
       cam: { x: [0, 0], y: [.01, 0], zoom: [1.16, 1.0] },
       build(add, map) {
-        const sun = map.point(800, 66);
-        add(.5, fxFalls(map, [
-          { x: 170, y0: 438, y1: 612, w: 62 }, { x: 225, y0: 642, y1: 790, w: 64 },
-          { x: 423, y0: 696, y1: 880, w: 36 }, { x: 516, y0: 672, y1: 735, w: 34 },
-          { x: 586, y0: 836, y1: 990, w: 42 }, { x: 657, y0: 700, y1: 770, w: 18 },
-          { x: 758, y0: 850, y1: 978, w: 20 },
-        ]));
-        add(.5, (c, t) => glow(c, sun.x, sun.y, VW * (.42 + Math.sin(t * .5) * .03), "rgba(255,226,150,.62)"));
-        add(.5, fxRays(sun, "rgba(255,226,165,.26)", 14, { from: 1.5, to: 3.5, len: 1.45 }));
-        add(.42, fxFog(4, 62, "rgba(255,228,180,.5)", .62, .78, { alpha: .16, w: 1.1 }));
-        add(.5, fxBirds(8, 16, "rgba(70,52,62,.6)", .08, .26));
-        add(.5, (c, t) => {
-          // มังกรแม่ลูกบินไกลลิบ ใช้สีเงาให้กลมกลืนกับภาพวาด
-          const k = (t * .03) % 1, x = lerp(1.2, -.2, k) * VW, y = VH * (.13 + Math.sin(k * 7) * .018);
-          drawDragon(c, x, y, 21, t * .55, "#4f3a45", "rgba(84,60,70,.9)", -1);
-          drawDragon(c, x + 40, y + 13, 10, t * .9, "#5b434d", "rgba(102,74,82,.9)", -1);
-        });
-        add(.72, fxFog(5, 12, "rgba(255,232,190,.5)", .68, .9, { alpha: .22, w: 1.35 }));
-        add(.76, fxMotes(16, 72, "rgba(255,226,148,.75)", { yMin: .36, yMax: .78, size: 5 }));
-        add(1.05, fxPetals(40, 12));
+        const spring = map.point(440, 500);
+        add(.5, fxTwinkle(map, 26, 7, 0, 0, 864, 520));
+        add(.5, (c, t) => glow(c, spring.x, spring.y, VW * (.3 + Math.sin(t * 1.1) * .04), "rgba(255,226,140,.7)"));
+        add(.5, fxFlicker(map, [[196, 704], [628, 556], [712, 640], [276, 536]], "rgba(255,120,200,.7)", 56, { speed: 1.4, depth: .45 }));
+        add(.5, fxFlicker(map, [[314, 780], [630, 556]], "rgba(110,230,255,.75)", 56, { speed: 1.2, depth: .45 }));
+        add(.5, fxFlicker(map, [[136, 596], [160, 640], [174, 890], [750, 740], [764, 784]], "rgba(255,220,110,.85)", 36, { speed: 2.2 }));
+        add(.5, fxFlicker(map, [[240, 590], [396, 736], [640, 644], [736, 904], [270, 930]], "rgba(190,140,255,.7)", 40, { speed: 1.6, depth: .45 }));
+        add(.72, fxMotes(26, 72, "rgba(170,255,210,.85)", { yMin: .2, yMax: .62, size: 6 }));
+        add(1.05, fxPetals(20, 12, ["#ffd1f0", "#c9f5ff", "#fff2a8"], { speed: .6 }));
       } },
 
-    { key: "demon", title: "จอมมารกาฬไข้", line: "",
-      painting: "art/demon.webp", veil: "#0a0507",
-      cam: { x: [0, 0], y: [0, 0], zoom: [1.42, 1.0], focus: .14, dur: 15 },
+    { key: "demon", title: "ราชาอสูรทศเศียร", line: "",
+      painting: "art/scenes/demon.webp", veil: "#0a0507",
+      cam: { x: [0, 0], y: [0, 0], zoom: [1.42, 1.0], focus: .2, dur: 15 },
       build(add, map) {
-        add(.5, fxLightning(map, 780, 430));
-        add(.5, fxFlicker(map, [[470, 400], [520, 500], [545, 560], [575, 615], [650, 700], [720, 770], [355, 330], [440, 720]], "rgba(255,90,30,.8)", 58, { speed: 1.5, depth: .55 }));
+        add(.5, fxLightning(map, 700, 200));
+        add(.5, fxFlicker(map, [[60, 880], [800, 880], [430, 860], [200, 1000], [660, 1000], [100, 1060], [760, 1060]], "rgba(255,110,40,.85)", 70, { speed: 1.8, depth: .5 }));
         add(.5, (c, t) => {
-          // ดวงตาของจอมมาร ค่อย ๆ ลุกขึ้นแล้วเต้นตามจังหวะหายใจ
+          // ดวงตาของศีรษะกลาง ค่อย ๆ ลุกขึ้นแล้วเต้นตามจังหวะหายใจ
           const a = smooth(clamp(t / 3)) * (.65 + .35 * Math.sin(t * 1.3));
-          [[468, 188], [497, 188]].forEach(([x, y]) => {
+          [[400, 340], [464, 340]].forEach(([x, y]) => {
             const p = map.point(x, y);
-            glow(c, p.x, p.y, 34, "rgba(255,60,30,.95)", a);
-            glow(c, p.x, p.y, 8, "rgba(255,226,180,1)", a);
+            glow(c, p.x, p.y, 30, "rgba(255,80,30,.95)", a);
           });
-        });
-        add(.5, fxTwinkle(map, 4, 7, 590, 60, 620, 90));
-        add(.5, fxFlicker(map, [[452, 1150, 1.5]], "rgba(255,216,110,.95)", 90, { speed: 2.2, depth: .3 }));
-        add(.58, (c, t) => {
-          // แม่มังกรพุ่งวนเข้าหามือของจอมมาร
-          const k = (t * .11) % 1, x = lerp(-.3, 1.3, k) * VW, y = VH * (.5 + Math.sin(k * 6.3) * .05);
-          drawDragon(c, x, y, 36, t * .7, "#2a1518", "rgba(150,54,40,.9)");
         });
         add(.72, fxEmbers(44, 18));
         add(.82, fxCreep(8, 33));

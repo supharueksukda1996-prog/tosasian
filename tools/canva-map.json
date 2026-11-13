@@ -1,0 +1,42 @@
+{
+  "_note": "ชื่อไฟล์ภาพจาก Canva ขึ้นต้นด้วยรหัสนี้ ใช้จับคู่ภาพกับสาขาตอนนำเข้า",
+  "common": {
+    "AaHVcXyZr3OjHtHrzRfPig": "med",
+    "AaHVblkI_S_fML93-8k1pw": "surg",
+    "AaHVcYCzCGeibxaMfAzY9A": "obgyn",
+    "AaHVcYTN9jXNjMU8SmrNYg": "ped",
+    "AaHVcYjrl9IRsMolWalJ4w": "ortho",
+    "AaHVcY0R2BD-t74B_9Z0LA": "ent",
+    "AaHVcZEg4gIA5a7_AawQmw": "eye",
+    "AaHVcZVOauOOPCvHnFDaJQ": "em",
+    "AaHVcZkssVZ18uVuz4WvtA": "psych",
+    "AaHVcZ3NgCcADeKxY-4OUg": "anes",
+    "AaHVcaJBRRG0Bl0-oiz_Tg": "rad",
+    "AaHVcaYdsE_KebpSFlPubw": "forensic",
+    "AaHVcancSLWovLxULaW3vw": "fam",
+    "AaHVca3bM4hn9qYuhMMZKg": "rehab",
+    "AaHVcbFx_qC9ynnbth_J0g": "research",
+    "AaHVcbYL6gaiyxaPbcuVyA": "mgmt"
+  },
+  "rare": {
+    "AaHVdNnuvc-2AykmZFespg": "med",
+    "AaHVdN2xqJ374DOYWb17Pw": "surg",
+    "AaHVdOFTPp6xMUwhI9YkfQ": "obgyn",
+    "AaHVdOVaxg6lVcFn1oHrlQ": "ped",
+    "AaHVdOobqY8V-487uDu6oQ": "ortho",
+    "AaHVdO4BXCeboGwN95o7zQ": "ent",
+    "AaHVdPG4nRAeHaNsYArv8A": "eye",
+    "AaHVdPVuqPSfMhpG7vqXug": "em",
+    "AaHVdPks27rcVvnmi6k_HA": "psych",
+    "AaHVdP0SwvrcQwpRsM8tjw": "anes",
+    "AaHVdQGQ3kU8kIYSpOpjkA": "rad",
+    "AaHVdQVXYGkJUJamVD4jKg": "forensic",
+    "AaHVdQlz-YO0fKNTvaGGXw": "fam",
+    "AaHVdQ1wSH8F--KRVz6RFg": "rehab",
+    "AaHVdRFk25tsOkjL_bAZfg": "research",
+    "AaHVdRWVb4t1vdmy-PH3cA": "mgmt"
+  },
+  "speakers": {
+    "AaHVdRnuBwW47prMqbKgvw": "demon"
+  }
+}

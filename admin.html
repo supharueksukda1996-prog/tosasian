@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ตรวจค่าเกม | ศึกทศเศียร</title>
+<style>
+  :root { --ink: #2f2a24; --soft: #6c6252; --line: #e2d6bb; --sage: #59836a; --warn: #b5482f; --bg: #f8f0dc; color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: var(--bg); color: var(--ink); font: 15px/1.5 "Sarabun", "Leelawadee UI", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  h2 { margin: 26px 0 8px; font-size: 1.1rem; }
+  p { margin: 0 0 8px; color: var(--soft); }
+  .card { padding: 14px 16px; margin-top: 10px; border-radius: 14px; background: #fffdf6; border: 1px solid var(--line); }
+  button { min-height: 40px; padding: 8px 14px; border: 0; border-radius: 10px; background: var(--sage); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  td.num { text-align: right; }
+  .bar { height: 10px; border-radius: 6px; background: var(--sage); }
+  .low .bar { background: var(--warn); }
+  .ok { color: var(--sage); font-weight: 700; }
+  .bad { color: var(--warn); font-weight: 700; }
+  code, textarea { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  textarea { width: 100%; min-height: 90px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ตรวจค่าเกมก่อนวันงาน</h1>
+  <p>หน้านี้อ่านค่าชุดเดียวกับเกม รวมถึงค่าจากชีตตั้งค่า แล้วจำลองผู้เล่นตอบแบบสุ่ม เพื่อดูว่าแต่ละสาขาออกบ่อยแค่ไหน</p>
+  <div class="card" id="source">กำลังโหลดค่า...</div>
+
+  <h2>ปัญหาที่ควรแก้</h2>
+  <div class="card" id="issues"></div>
+
+  <h2>สัดส่วนผลลัพธ์จากการจำลอง</h2>
+  <p>ถ้าทุกสาขาออกเท่ากันจะได้สาขาละ <b id="target"></b> สาขาที่ต่ำกว่าครึ่งของค่านี้จะเป็นสีแดง</p>
+  <div class="card scroll"><table id="dist"></table></div>
+
+  <h2>ปรับสมดุลอัตโนมัติ</h2>
+  <p>กดเพื่อคำนวณค่า bias ใหม่ให้ทุกสาขาออกใกล้เคียงกัน แล้วคัดลอกตัวเลขไปใส่คอลัมน์ bias ในแท็บ specialties ของชีต</p>
+  <div class="card">
+    <button id="calibrate" type="button">คำนวณ bias ใหม่</button>
+    <div class="scroll" style="margin-top:10px"><table id="biasTable"></table></div>
+  </div>
+</main>
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script>
+  const RUNS = 20000;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function simulate() {
+    const qs = ENGINE.questions(), count = Object.fromEntries(GAME.specialties.map(s => [s.id, 0]));
+    for (let i = 0; i < RUNS; i++) {
+      const picks = qs.map(q => Math.floor(Math.random() * q.options.length));
+      count[ENGINE.rank(ENGINE.profileOf(picks)).at(0).s.id]++;
+    }
+    return count;
+  }
+
+  function renderDist(count) {
+    const target = 1 / GAME.specialties.length;
+    document.getElementById("target").textContent = (target * 100).toFixed(1) + "%";
+    const max = Math.max(...Object.values(count)) / RUNS;
+    document.getElementById("dist").innerHTML = "<tr><th>สาขา</th><th>สัดส่วน</th><th style='width:45%'></th><th>bias</th></tr>" +
+      GAME.specialties.map(s => {
+        const share = count[s.id] / RUNS;
+        return `<tr class="${share < target / 2 ? "low" : ""}"><td>${esc(s.name)}</td><td class="num">${(share * 100).toFixed(1)}%</td><td><div class="bar" style="width:${(share / max) * 100}%"></div></td><td class="num">${Number(s.bias).toFixed(3)}</td></tr>`;
+      }).join("");
+  }
+
+  function checkIssues() {
+    const issues = [], dims = ENGINE.dims();
+    if (!(GAME.settings.rareRate >= 0 && GAME.settings.rareRate <= 1)) issues.push("rareRate ต้องอยู่ระหว่าง 0 ถึง 1");
+    for (const s of GAME.specialties) {
+      if (dims.every(d => !s.profile[d])) issues.push(`${s.name}: ค่า profile เป็นศูนย์ทั้งหมด`);
+      if (dims.every(d => s.profile[d] === s.profile[dims[0]])) issues.push(`${s.name}: ค่า profile เท่ากันทุกด้าน เกมจะเลือกสาขานี้ไม่ได้`);
+    }
+    ENGINE.questions().forEach(q => q.options.forEach((o, i) => {
+      if (!o.score || !Object.values(o.score).some(v => v)) issues.push(`${q.id} ตัวเลือก ${"ABC"[i]}: ไม่มีคะแนนเลย`);
+    }));
+    const max = ENGINE.maxPerDim();
+    dims.forEach(d => { if (!max[d]) issues.push(`มิติ ${d}: ไม่มีคำถามข้อไหนให้คะแนนด้านนี้`); });
+    return issues;
+  }
+
+  function checkImages() {
+    const urls = [...new Set(GAME.specialties.flatMap(s => [s.img, s.hero, s.heroRare]).filter(Boolean))];
+    return Promise.all(urls.map(u => new Promise(r => { const i = new Image(); i.onload = () => r(null); i.onerror = () => r(u); i.src = u; }))).then(list => list.filter(Boolean));
+  }
+
+  function calibrate() {
+    const qs = ENGINE.questions(), n = 8000;
+    const samples = Array.from({ length: n }, () => ENGINE.profileOf(qs.map(q => Math.floor(Math.random() * q.options.length))));
+    const target = 1 / GAME.specialties.length;
+    for (let it = 0; it < 40; it++) {
+      const c = Object.fromEntries(GAME.specialties.map(s => [s.id, 0]));
+      for (const p of samples) c[ENGINE.rank(p)[0].s.id]++;
+      for (const s of GAME.specialties) s.bias = Math.max(-.2, Math.min(.2, Number(s.bias) + .02 * (target - c[s.id] / n) / target));
+    }
+    document.getElementById("biasTable").innerHTML = "<tr><th>id</th><th>สาขา</th><th>bias ใหม่</th></tr>" +
+      GAME.specialties.map(s => `<tr><td><code>${esc(s.id)}</code></td><td>${esc(s.name)}</td><td class="num"><code>${Number(s.bias).toFixed(3)}</code></td></tr>`).join("");
+    renderDist(simulate());
+  }
+
+  (async () => {
+    const report = await ENGINE.loadSheet();
+    const configured = Object.values(GAME.sheet).filter(Boolean).length;
+    document.getElementById("source").innerHTML = configured
+      ? `ใช้ค่าจากชีต: โหลดได้ <span class="ok">${report.loaded.join(", ") || "-"}</span>${report.failed.length ? ` · โหลดไม่ได้ <span class="bad">${report.failed.join(", ")}</span> (ใช้ค่าใน data.js แทน)` : ""}`
+      : "ยังไม่ได้ตั้งลิงก์ชีต จึงใช้ค่าใน data.js ทั้งหมด";
+    const issues = checkIssues(), missing = await checkImages();
+    missing.forEach(u => issues.push(`ไม่พบรูป: ${u}`));
+    document.getElementById("issues").innerHTML = issues.length ? "<ul>" + issues.map(i => `<li class="bad">${esc(i)}</li>`).join("") + "</ul>" : '<span class="ok">ไม่พบปัญหา</span>';
+    renderDist(simulate());
+    document.getElementById("calibrate").addEventListener("click", calibrate);
+  })();
+</script>
+</body>
+</html>

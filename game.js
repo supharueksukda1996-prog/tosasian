@@ -5,11 +5,12 @@
   const flash = document.getElementById("flash");
   const QUEUE_KEY = "aurelen-queue";
 
-  const state = { nick: "", audience: "", picks: [], items: [], startedAt: 0, session: "", result: null };
+  const state = { nick: "", audience: "", picks: [], startedAt: 0, session: "", result: null, rare: false, profile: null };
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const fill = text => text.replace("{weapon}", state.items[0] ? state.items[0].item : "อาวุธ");
+  const S = () => GAME.settings;
+  const dimName = id => (GAME.dimensions.find(d => d.id === id) || {}).name || id;
 
   // ---------- หน้าแรก ----------
   function showIntro() {
@@ -19,8 +20,9 @@
       <section class="intro">
         <header class="hero">
           <small>จบแล้วไปไหน · คณะแพทยศาสตร์ มหาวิทยาลัยขอนแก่น</small>
-          <h1>ม้วนคัมภีร์<br>แห่งออเรเลน</h1>
-          <p>จอมมารตื่นแล้ว อุปกรณ์ปราบมันมี 6 ชิ้น<br>และชิ้นสุดท้ายรอคุณอยู่ที่ซุ้มหนึ่งในงานนี้</p>
+          <h1>${esc(S().title)}</h1>
+          <p>${esc(S().subtitle)}</p>
+          <p class="hero-sub">ตอบ ${ENGINE.questions().length} คำถามระหว่างการเดินทาง<br>แล้วรับการ์ดผู้เยียวยาที่เป็นตัวคุณ</p>
         </header>
         <form class="sheet" id="intro">
           <label class="field">ชื่อบนการ์ด <small>(ไม่บังคับ)</small>
@@ -32,8 +34,8 @@
               ${GAME.audience.map(a => `<option>${esc(a)}</option>`).join("")}
             </select>
           </label>` : ""}
-          <button class="btn" type="submit">ออกเดินทาง</button>
-          ${GAME.endpoint ? `<p class="notice">ผู้จัดงานเก็บชั้นปี ตัวเลือกในเรื่อง และสาขาที่ได้แบบไม่ระบุตัวตน เพื่อใช้ปรับปรุงกิจกรรม ชื่อบนการ์ดจะไม่ถูกส่งออกจากเครื่อง การกดออกเดินทางถือว่ายินยอมตามนี้</p>` : ""}
+          <button class="btn" type="submit">เข้าร่วมกองทัพ</button>
+          ${GAME.endpoint ? `<p class="notice">ผู้จัดงานเก็บชั้นปี คำตอบ และผลลัพธ์แบบไม่ระบุตัวตน เพื่อใช้ปรับปรุงกิจกรรม ชื่อบนการ์ดจะไม่ถูกส่งออกจากเครื่อง การกดเริ่มถือว่ายินยอมตามนี้</p>` : ""}
         </form>
       </section>`;
     document.getElementById("intro").addEventListener("submit", e => {
@@ -41,22 +43,17 @@
       state.nick = document.getElementById("nick").value.trim();
       state.audience = GAME.endpoint ? document.getElementById("aud").value : "";
       state.picks = [];
-      state.items = [];
       state.startedAt = Date.now();
       state.session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       pack.hidden = false;
-      renderPack();
+      renderProgress();
       playChapter(0, true);
     });
   }
 
-  function renderPack() {
-    const slots = GAME.chapters.filter(c => c.options).length + 1;
-    pack.innerHTML = Array.from({ length: slots }, (_, i) => {
-      const it = state.items[i];
-      if (it) return `<span class="slot full" title="${esc(it.item)}">${it.img ? `<img src="${esc(it.img)}" alt="">` : it.icon}</span>`;
-      return `<span class="slot ${i === slots - 1 ? "last" : ""}">${i === slots - 1 ? "?" : i + 1}</span>`;
-    }).join("");
+  function renderProgress() {
+    const total = ENGINE.questions().length, done = state.picks.length;
+    pack.innerHTML = `<div class="progress" aria-label="ตอบแล้ว ${done} จาก ${total} ข้อ"><span style="width:${(done / total) * 100}%"></span></div><b>${done}/${total}</b>`;
   }
 
   // ---------- เล่าเรื่องทีละจังหวะ ----------
@@ -65,7 +62,7 @@
   }
 
   function lineHTML(who, text) {
-    return `${who ? `<span class="who">${esc(who)}</span>` : ""}<span class="line">${esc(fill(text))}</span>`;
+    return `${who ? `<span class="who">${esc(who)}</span>` : ""}<span class="line">${esc(text)}</span>`;
   }
 
   // กล่องข้อความพร้อมรูปผู้พูดด้านข้าง จะขยับเข้ามาเฉพาะตอนเปลี่ยนผู้พูด
@@ -82,20 +79,22 @@
     stage.innerHTML = "";
     if (!first || chapter.scene !== 0) await Scenes.go(chapter.scene);
     if (chapter.quake) { await wait(500); Scenes.shake(); }
-    await playBeats(chapter);
-    if (chapter.options) showOptions(i);
-    else showNext(i);
+    await playBeats(chapter, chapter.beats);
+    for (const q of chapter.questions || []) await askQuestion(chapter, q);
+    if (chapter.after) await playBeats(chapter, chapter.after);
+    if (i === GAME.chapters.length - 1) showFinal(chapter);
+    else playChapter(i + 1);
   }
 
-  function playBeats(chapter) {
+  function playBeats(chapter, beats) {
     return new Promise(resolve => {
       let n = 0;
       const render = () => {
-        const [who, text] = chapter.beats[n];
+        const [who, text] = beats[n];
         shell(chapter, talkHTML(who, `<button class="dialog" type="button" id="beat">${lineHTML(who, text)}<span class="more">แตะเพื่ออ่านต่อ</span></button>`));
         document.getElementById("beat").addEventListener("click", () => {
           n++;
-          if (n < chapter.beats.length) render();
+          if (n < beats.length) render();
           else resolve();
         });
       };
@@ -103,96 +102,113 @@
     });
   }
 
-  function showOptions(i) {
-    const chapter = GAME.chapters[i];
+  function askQuestion(chapter, q) {
     lastSpeaker = "";
-    shell(chapter, `
-      <div class="dialog static">
-        <span class="ask">${esc(chapter.ask)}</span>
-        <div class="options">
-          ${chapter.options.map((o, n) => `<button class="option" type="button" data-n="${n}">${esc(o.text)}</button>`).join("")}
-        </div>
-      </div>`);
-    stage.querySelectorAll(".option").forEach(btn => btn.addEventListener("click", () => {
-      const o = chapter.options[Number(btn.dataset.n)];
-      state.picks.push("ABC"[Number(btn.dataset.n)]);
-      state.items.push({ item: o.item, icon: o.icon });
-      renderPack();
+    return new Promise(resolve => {
       shell(chapter, `
-        ${talkHTML(o.who, `<div class="dialog static">
-          ${lineHTML(o.who, o.reply)}
-          <span class="loot">${o.icon} ได้รับ ${esc(o.item)}</span>
-        </div>`)}
-        <button class="btn" type="button" id="go">เดินทางต่อ</button>`);
-      document.getElementById("go").addEventListener("click", () => playChapter(i + 1));
-    }));
+        <div class="dialog static">
+          <span class="ask">${esc(q.ask)}</span>
+          <div class="options">
+            ${q.options.map((o, n) => `<button class="option" type="button" data-n="${n}">${esc(o.text)}</button>`).join("")}
+          </div>
+        </div>`);
+      stage.querySelectorAll(".option").forEach(btn => btn.addEventListener("click", async () => {
+        const n = Number(btn.dataset.n), o = q.options[n];
+        stage.querySelectorAll(".option").forEach(b => (b.disabled = true));
+        btn.classList.add("picked");
+        state.picks.push(n);
+        renderProgress();
+        // บอกผู้เล่นว่าคำตอบนี้เพิ่มค่าสถานะด้านไหน
+        const gains = Object.entries(o.score || {}).filter(([, v]) => v > 0).map(([d, v]) => `<span>+${v} ${esc(dimName(d))}</span>`).join("");
+        if (gains) btn.insertAdjacentHTML("beforeend", `<span class="gain">${gains}</span>`);
+        await wait(gains ? 650 : 200);
+        resolve();
+      }));
+    });
   }
 
-  function showNext(i) {
-    const chapter = GAME.chapters[i], last = i === GAME.chapters.length - 1;
-    // ตอนจบซ่อนกล่องข้อความ ให้เห็นผู้ฝึกหัดชูม้วนคัมภีร์ต่อหน้าจอมมาร
-    shell(chapter, `<button class="btn ${last ? "gold" : ""}" type="button" id="go">${esc(chapter.next)}</button>`);
-    document.getElementById("go").addEventListener("click", () => (last ? reveal() : playChapter(i + 1)));
+  function showFinal(chapter) {
+    // ซ่อนกล่องข้อความ ให้เห็นผู้เยียวยาชูแสงต่อหน้าราชาอสูร
+    shell(chapter, `<button class="btn gold" type="button" id="go">${esc(chapter.next)}</button>`);
+    document.getElementById("go").addEventListener("click", reveal);
   }
 
-  // ---------- สุ่มผล ----------
-  function randomSpecialty() {
-    const list = GAME.specialties, buf = new Uint32Array(1);
-    // ตัดส่วนเกินทิ้ง เพื่อให้ทุกสาขามีโอกาสเท่ากันจริง
-    const limit = Math.floor(2 ** 32 / list.length) * list.length;
-    do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
-    return list[buf[0] % list.length];
+  // ---------- คิดผล ----------
+  function randomUnit() {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return buf[0] / 2 ** 32;
   }
 
   async function reveal() {
-    state.result = randomSpecialty();
-    state.items[5] = { item: state.result.item, icon: state.result.emoji, img: state.result.img };
-    if (state.result.img) new Image().src = state.result.img;
+    state.profile = ENGINE.profileOf(state.picks);
+    const ranking = ENGINE.rank(state.profile);
+    state.result = ranking[0].s;
+    state.runnerUp = ranking[1].s;
+    state.rare = randomUnit() < Number(S().rareRate);
+    const art = cardArt();
     stage.innerHTML = "";
-    await Promise.race([loadImage(state.result.hero), wait(2500)]);
+    pack.hidden = true;
+    await Promise.race([Promise.all([loadImage(art), state.result.img ? loadImage(state.result.img) : null]), wait(2500)]);
     Scenes.shake();
     flash.classList.remove("on"); void flash.offsetWidth; flash.classList.add("on");
     send({
       type: "result",
       audience: state.audience,
-      picks: state.picks.join(""),
+      picks: state.picks.map(n => "ABC"[n]).join(""),
       specialty: state.result.id,
       specialtyName: state.result.name,
+      rare: state.rare ? 1 : 0,
       seconds: Math.round((Date.now() - state.startedAt) / 1000),
     });
     await wait(450);
     dim.classList.add("on");
-    renderPack();
     showResult();
   }
 
-  function medal(s) {
-    return s.img ? `<img src="${esc(s.img)}" alt="">` : `<span aria-hidden="true">${s.emoji}</span>`;
+  const cardArt = () => (state.rare && state.result.heroRare) || state.result.hero;
+
+  function cardHTML() {
+    const s = state.result, rare = state.rare;
+    const stats = ENGINE.stats(state.profile);
+    return `
+      <article class="tcg ${rare ? "rare" : "common"}">
+        <div class="tcg-inner">
+          <header class="tcg-top">
+            <span class="tcg-name">${esc(s.guild)}</span>
+            <span class="tcg-gem">${rare ? "★ RARE" : "◆ COMMON"}</span>
+          </header>
+          <div class="tcg-art">
+            <img src="${esc(cardArt())}" alt="ตัวแทนสาขา ${esc(s.name)}">
+            ${s.img ? `<img class="tcg-badge" src="${esc(s.img)}" alt="">` : ""}
+          </div>
+          <div class="tcg-type"><span>${esc(s.name)}</span><span>No.${String(s.no).padStart(2, "0")}/${GAME.specialties.length}</span></div>
+          <div class="tcg-stats">
+            ${stats.map(d => `<div class="stat"><span>${esc(d.name)}</span><i><b style="width:${d.value}%"></b></i><em>${d.value}</em></div>`).join("")}
+          </div>
+          <div class="tcg-skill"><b>สกิล · ${esc(s.item)}</b>${esc(s.fortune)}</div>
+          ${state.nick ? `<div class="tcg-owner">ผู้เยียวยา ${esc(state.nick)}</div>` : ""}
+        </div>
+      </article>`;
   }
 
   function showResult() {
     const s = state.result;
     stage.innerHTML = `
       <section class="result">
-        <article class="scroll">
-          <p class="kicker">อุปกรณ์ชิ้นสุดท้ายอยู่ที่</p>
-          <div class="champion">
-            <img src="${esc(s.hero)}" alt="ตัวแทนสาขา ${esc(s.name)}">
-            <div class="medal">${medal(s)}</div>
-          </div>
-          <p class="guild">${esc(s.guild)}</p>
-          <h2>${esc(s.name)}</h2>
-          <span class="relic">${esc(s.item)}</span>
-          <p class="trait">${esc(s.trait)}</p>
-          <p class="fortune">${esc(s.fortune)}</p>
+        <p class="result-kicker">${state.rare ? "โชคเข้าข้าง! คุณได้การ์ด Rare" : "การ์ดผู้เยียวยาของคุณ"}</p>
+        ${cardHTML()}
+        <div class="panel">
+          <p class="trait"><b>บุคลิก</b>${esc(s.trait)}</p>
+          <p class="trait"><b>ใกล้เคียงรองลงมา</b>${esc(state.runnerUp.name)} · ${esc(state.runnerUp.guild)}</p>
           <div class="divider"></div>
+          <p class="mission">ไปคุยกับอาจารย์ที่ซุ้ม ${esc(s.name)} เพื่อรับภารกิจต่อ</p>
           <div class="ask-teacher"><b>คำถามชวนคุยกับอาจารย์</b>${esc(s.ask)}</div>
-          <div class="kit"><b>อุปกรณ์ที่คุณเก็บมา</b>${state.items.slice(0, 5).map(it => `<span>${it.icon} ${esc(it.item)}</span>`).join("")}</div>
-          <p class="mission">ไปรับอุปกรณ์ชิ้นสุดท้ายจากอาจารย์ที่ซุ้มนี้ แล้วจอมมารจะไม่มีวันชนะ</p>
-        </article>
+          <p class="disclaimer">ออกแบบจากแนวคิดงานวิจัยด้านความสนใจอาชีพและการเลือกสาขา เพื่อความสนุก ไม่ใช่การวัดทางวิชาการ</p>
+        </div>
         <div class="actions">
           <button class="btn" type="button" id="save">แชร์ลงสตอรี่</button>
-          <button class="btn ghost" style="color:#fff;box-shadow:inset 0 0 0 1.5px #fff" type="button" id="again">เดินทางอีกครั้ง</button>
+          <button class="btn ghost light" type="button" id="again">เล่นอีกครั้ง</button>
         </div>
       </section>`;
     scrollTo(0, 0);
@@ -200,7 +216,6 @@
     document.getElementById("again").addEventListener("click", async () => {
       stage.innerHTML = "";
       dim.classList.remove("on");
-      pack.hidden = true;
       await Scenes.go(0);
       showIntro();
     });
@@ -222,6 +237,7 @@
   }
   function loadImage(src) {
     return new Promise(resolve => {
+      if (!src) return resolve(null);
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () => resolve(null);
@@ -233,72 +249,112 @@
     x.moveTo(X + R, Y); x.arcTo(X + W, Y, X + W, Y + H, R); x.arcTo(X + W, Y + H, X, Y + H, R);
     x.arcTo(X, Y + H, X, Y, R); x.arcTo(X, Y, X + W, Y, R); x.closePath();
   }
+  function cover(x, img, X, Y, W, H) {
+    const r = Math.max(W / img.width, H / img.height), w = img.width * r, h = img.height * r;
+    x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip();
+    x.drawImage(img, X + (W - w) / 2, Y, w, h);
+    x.restore();
+  }
 
   async function makeStory() {
-    const s = state.result, holder = state.nick || "ผู้ฝึกหัด";
+    const s = state.result, rare = state.rare;
     const font = (weight, size, family = "Sarabun") => `${weight} ${size}px ${family}, "Noto Sans Thai", sans-serif`;
-    try { await Promise.all([document.fonts.load("700 80px Charmonman", "ม้วนคัมภีร์"), document.fonts.load("700 40px Sarabun", "สำนัก"), document.fonts.load("500 40px Sarabun", "สำนัก")]); } catch (e) { /* ใช้ฟอนต์สำรอง */ }
+    try { await Promise.all([document.fonts.load("700 80px Charmonman", S().title), document.fonts.load("700 40px Sarabun", "สำนัก"), document.fonts.load("500 40px Sarabun", "สำนัก")]); } catch (e) { /* ใช้ฟอนต์สำรอง */ }
     const c = document.createElement("canvas");
     c.width = 1080; c.height = 1920;
     const x = c.getContext("2d");
-    x.fillStyle = "#100d13"; x.fillRect(0, 0, 1080, 1920);
-    const [hero, art] = await Promise.all([loadImage(s.hero), s.img ? loadImage(s.img) : null]);
-    if (hero) x.drawImage(hero, 0, 0, 1080, 1620);
+    const [art, badge] = await Promise.all([loadImage(cardArt()), loadImage(s.img)]);
 
-    // ไล่สีให้ตัวหนังสืออ่านง่าย และเว้นขอบบนล่างไว้ให้แถบของ Instagram
-    let g = x.createLinearGradient(0, 0, 0, 340);
-    g.addColorStop(0, "rgba(10,8,12,.82)"); g.addColorStop(1, "rgba(10,8,12,0)");
-    x.fillStyle = g; x.fillRect(0, 0, 1080, 340);
-    g = x.createLinearGradient(0, 760, 0, 1080);
-    g.addColorStop(0, "rgba(16,13,19,0)"); g.addColorStop(1, "rgba(16,13,19,1)");
-    x.fillStyle = g; x.fillRect(0, 760, 1080, 320);
-    x.fillStyle = "#100d13"; x.fillRect(0, 1080, 1080, 840);
-
+    // พื้นหลังเบลอจากภาพตัวละคร
+    x.fillStyle = "#120f18"; x.fillRect(0, 0, 1080, 1920);
+    if (art) { x.save(); x.filter = "blur(40px) brightness(.45)"; cover(x, art, -60, -60, 1200, 2040); x.restore(); }
     x.textAlign = "center"; x.textBaseline = "middle";
-    x.shadowColor = "rgba(0,0,0,.9)"; x.shadowBlur = 20;
-    x.fillStyle = "#fff4d6"; x.font = font(700, 66, "Charmonman");
-    x.fillText("ม้วนคัมภีร์แห่งออเรเลน", 540, 190);
+    x.shadowColor = "rgba(0,0,0,.85)"; x.shadowBlur = 18;
+    x.fillStyle = "#fff4d6"; x.font = font(700, 58, "Charmonman"); x.fillText(S().title, 540, 236);
+    x.font = font(600, 30); x.fillText(state.nick ? `การ์ดผู้เยียวยาของ ${state.nick}` : "การ์ดผู้เยียวยาของฉัน", 540, 300);
     x.shadowBlur = 0;
 
-    // ตราสาขา
-    const bx = 540, by = 985, br = 92;
-    x.fillStyle = "#fffaf0"; x.beginPath(); x.arc(bx, by, br, 0, 7); x.fill();
-    x.strokeStyle = "#d9a441"; x.lineWidth = 6; x.stroke();
-    if (art) x.drawImage(art, bx - 68, by - 68, 136, 136);
-    else { x.fillStyle = "#2f2a24"; x.font = `92px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`; x.fillText(s.emoji, bx, by + 4); }
+    // กรอบการ์ด
+    const X = 110, Y = 350, W = 860, H = 1250;
+    const frame = x.createLinearGradient(X, Y, X + W, Y + H);
+    if (rare) { frame.addColorStop(0, "#fff0b5"); frame.addColorStop(.35, "#d9a441"); frame.addColorStop(.6, "#fff7d8"); frame.addColorStop(1, "#b07a1f"); }
+    else { frame.addColorStop(0, "#9fd0b4"); frame.addColorStop(.5, "#59836a"); frame.addColorStop(1, "#2f5a44"); }
+    x.shadowColor = rare ? "rgba(255,210,110,.7)" : "rgba(0,0,0,.6)"; x.shadowBlur = rare ? 60 : 30;
+    x.fillStyle = frame; rounded(x, X, Y, W, H, 34); x.fill();
+    x.shadowBlur = 0;
+    x.fillStyle = "#fbf4e2"; rounded(x, X + 18, Y + 18, W - 36, H - 36, 22); x.fill();
 
-    let y = 1122;
-    x.fillStyle = "#d9c7a6"; x.font = font(600, 30); x.fillText(`${holder} ต้องไปรับอุปกรณ์ชิ้นสุดท้ายจาก`, 540, y);
-    y += 56; x.fillStyle = "#a9cdb6"; x.font = font(600, 36); x.fillText(s.guild, 540, y);
-    y += 76; x.fillStyle = "#fff8e6"; x.font = font(700, s.name.length > 15 ? 66 : 84); x.fillText(s.name, 540, y);
-    y += 74; x.fillStyle = "#f3d890"; x.font = font(600, 40); x.fillText(s.item, 540, y);
-    y += 62; x.fillStyle = "#f4ead8"; x.font = font(500, 32);
-    for (const l of wrap(x, s.fortune, 820)) { x.fillText(l, 540, y); y += 46; }
-    y += 16; x.fillStyle = "#bdb09a"; x.font = font(500, 26);
-    for (const l of wrap(x, state.items.slice(0, 5).map(it => it.item).join(" · "), 880)) { x.fillText(l, 540, y); y += 38; }
-    y += 34;
-    x.fillStyle = "#59836a"; rounded(x, 170, y - 36, 740, 72, 14); x.fill();
-    x.fillStyle = "#fff"; x.font = font(700, 30); x.fillText("แล้วคุณล่ะ จบแล้วไปไหน?", 540, y);
-    y += 62; x.fillStyle = "#bdb09a"; x.font = font(500, 24); x.fillText("คณะแพทยศาสตร์ มหาวิทยาลัยขอนแก่น", 540, y);
+    // แถบชื่อ
+    x.fillStyle = rare ? "#3a2a0f" : "#24352b"; rounded(x, X + 34, Y + 34, W - 68, 76, 16); x.fill();
+    x.textAlign = "left"; x.fillStyle = "#fff7e2"; x.font = font(700, 38); x.fillText(s.guild, X + 58, Y + 73);
+    x.textAlign = "right"; x.fillStyle = rare ? "#ffd46b" : "#a9e0c0"; x.font = font(700, 26); x.fillText(rare ? "★ RARE" : "◆ COMMON", X + W - 58, Y + 73);
+
+    // ภาพ
+    const AX = X + 34, AY = Y + 124, AW = W - 68, AH = 600;
+    x.save(); rounded(x, AX, AY, AW, AH, 14); x.clip();
+    if (art) cover(x, art, AX, AY, AW, AH);
+    if (rare) {
+      // ฟอยล์รุ้งพาดเฉียง
+      const foil = x.createLinearGradient(AX, AY, AX + AW, AY + AH);
+      ["rgba(255,90,170,.0)", "rgba(255,120,200,.28)", "rgba(120,200,255,.28)", "rgba(140,255,200,.25)", "rgba(255,240,140,.28)", "rgba(255,90,170,0)"].forEach((col, i, a) => foil.addColorStop(i / (a.length - 1), col));
+      x.globalCompositeOperation = "overlay"; x.fillStyle = foil; x.fillRect(AX, AY, AW, AH); x.globalCompositeOperation = "source-over";
+    }
+    x.restore();
+    x.strokeStyle = rare ? "#d9a441" : "#59836a"; x.lineWidth = 5; rounded(x, AX, AY, AW, AH, 14); x.stroke();
+    if (badge) {
+      x.fillStyle = "#fffaf0"; x.beginPath(); x.arc(AX + AW - 70, AY + AH - 64, 62, 0, 7); x.fill();
+      x.strokeStyle = rare ? "#d9a441" : "#59836a"; x.lineWidth = 5; x.stroke();
+      x.drawImage(badge, AX + AW - 116, AY + AH - 110, 92, 92);
+    }
+
+    // ชนิดการ์ด
+    let y = AY + AH + 44;
+    x.textAlign = "left"; x.fillStyle = "#2f2a24"; x.font = font(700, 44); x.fillText(s.name, X + 40, y);
+    x.textAlign = "right"; x.fillStyle = "#8a7d66"; x.font = font(600, 26); x.fillText(`No.${String(s.no).padStart(2, "0")}/${GAME.specialties.length}`, X + W - 40, y);
+
+    // ค่าสถานะ 2 คอลัมน์
+    const stats = ENGINE.stats(state.profile);
+    y += 48;
+    stats.forEach((d, i) => {
+      const col = i % 2, row = Math.floor(i / 2), sx = X + 40 + col * 400, sy = y + row * 50;
+      x.textAlign = "left"; x.fillStyle = "#4b4337"; x.font = font(600, 26); x.fillText(d.name, sx, sy);
+      x.fillStyle = "#e6dcc4"; rounded(x, sx + 100, sy - 10, 210, 20, 10); x.fill();
+      x.fillStyle = rare ? "#d9a441" : "#59836a"; rounded(x, sx + 100, sy - 10, 210 * d.value / 100, 20, 10); x.fill();
+      x.textAlign = "right"; x.fillStyle = "#2f2a24"; x.font = font(700, 26); x.fillText(d.value, sx + 360, sy);
+    });
+
+    // สกิล
+    y += 3 * 50 + 14;
+    x.fillStyle = rare ? "#f6e7bd" : "#e3efe6"; rounded(x, X + 34, y - 20, W - 68, 150, 14); x.fill();
+    x.textAlign = "left"; x.fillStyle = rare ? "#7a5410" : "#2f5a44"; x.font = font(700, 28); x.fillText(`สกิล · ${s.item}`, X + 58, y + 14);
+    x.fillStyle = "#3b342a"; x.font = font(500, 26);
+    wrap(x, s.fortune, W - 120).slice(0, 2).forEach((l, i) => x.fillText(l, X + 58, y + 58 + i * 38));
+
+    // แท็กเพื่อน เว้นพื้นที่ให้วางสติกเกอร์ mention
+    x.textAlign = "center";
+    x.fillStyle = "rgba(255,255,255,.1)"; rounded(x, 110, 1640, 860, 110, 22); x.fill();
+    x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1640, 860, 110, 22); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 540, 1678);
+    x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 540, 1722);
 
     const url = c.toDataURL("image/png");
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
-    const file = blob && new File([blob], "aurelen-story.png", { type: "image/png" });
+    const file = blob && new File([blob], "healer-card.png", { type: "image/png" });
     const canShare = file && navigator.canShare && navigator.canShare({ files: [file] });
     const view = document.createElement("div");
     view.className = "viewer";
     view.innerHTML = `<div>
-      <img src="${url}" alt="การ์ดผลลัพธ์สาขา ${esc(s.name)}">
+      <img src="${url}" alt="การ์ดผู้เยียวยาสาขา ${esc(s.name)}">
       <p>${canShare ? "กดแชร์ แล้วเลือก Instagram หรือกดค้างที่รูปเพื่อบันทึก" : "กดค้างที่รูปเพื่อบันทึก แล้วนำไปลงสตอรี่"}</p>
       <div class="actions">
-        ${canShare ? `<button class="btn" id="share" type="button">แชร์</button>` : `<a class="btn" href="${url}" download="aurelen-story.png">ดาวน์โหลดรูป</a>`}
+        ${canShare ? `<button class="btn" id="share" type="button">แชร์</button>` : `<a class="btn" href="${url}" download="healer-card.png">ดาวน์โหลดรูป</a>`}
         <button class="btn ghost" id="closeV" type="button">ปิด</button>
       </div>
     </div>`;
     document.body.append(view);
     view.querySelector("#closeV").addEventListener("click", () => view.remove());
     const share = view.querySelector("#share");
-    if (share) share.addEventListener("click", () => navigator.share({ files: [file], text: "ฉันพร้อมปราบจอมมารแล้ว แค่ต้องไปรับอุปกรณ์ชิ้นสุดท้าย แล้วคุณล่ะ จบแล้วไปไหน?" }).catch(() => {}));
+    if (share) share.addEventListener("click", () => navigator.share({ files: [file], text: S().shareText }).catch(() => {}));
   }
 
   // ---------- เก็บข้อมูล ----------
@@ -334,6 +390,6 @@
   addEventListener("online", flush);
 
   Object.values(GAME.speakers).forEach(src => { new Image().src = src; });
-  Scenes.start(0).then(showIntro);
+  Promise.all([Scenes.start(0), ENGINE.loadSheet()]).then(showIntro);
   flush();
 })();

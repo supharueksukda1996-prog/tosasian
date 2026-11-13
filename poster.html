@@ -25,15 +25,15 @@
     box-shadow: inset 0 0 0 1.2mm #fff4d0, inset 0 0 0 2mm #c98f2c;
   }
   .host { margin: 0; font-weight: 700; font-size: 15pt; letter-spacing: .02em; }
-  .event { margin: 9mm 0 0; font: 700 50pt/1.1 "Charmonman", serif; color: #8a4c0c; text-shadow: 0 1mm 0 #fff4d0; }
+  .event { margin: 9mm 0 0; font: 700 50pt/1.1 "Charmonman", serif; color: #8a4c0c; }
   .game { margin: 1mm 0 0; font-weight: 800; font-size: 22pt; color: #2f5a44; }
   .lead { margin: 2mm 0 0; font-weight: 500; font-size: 14pt; }
   .cards { position: relative; width: 150mm; height: 82mm; margin: 6mm 0 4mm; }
-  .cards img { position: absolute; top: 4mm; width: 46mm; border-radius: 4mm; border: 1.6mm solid #f0c45c; box-shadow: 0 3mm 6mm rgba(90, 50, 0, .35); }
+  .cards img { position: absolute; top: 4mm; width: 46mm; border-radius: 4mm; border: 1.6mm solid #f0c45c; outline: .6mm solid #b07a1f; }
   .cards img:nth-child(1) { left: 14mm; transform: rotate(-9deg); }
   .cards img:nth-child(2) { left: 50%; top: 0; width: 52mm; margin-left: -26mm; z-index: 2; }
   .cards img:nth-child(3) { right: 14mm; transform: rotate(9deg); }
-  .scan { display: flex; align-items: center; gap: 8mm; margin-top: 2mm; padding: 6mm 8mm; border-radius: 8mm; background: #fffaf0; box-shadow: 0 2mm 6mm rgba(90, 50, 0, .25); }
+  .scan { display: flex; align-items: center; gap: 8mm; margin-top: 2mm; padding: 6mm 8mm; border-radius: 8mm; background: #fffaf0; border: .8mm solid #c98f2c; }
   .scan img { width: 62mm; height: 62mm; image-rendering: pixelated; }
   .steps { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 15pt; line-height: 1.45; }
   .steps li { display: flex; gap: 3mm; align-items: baseline; margin: 2.5mm 0; }
@@ -41,10 +41,12 @@
   .rare { margin: 7mm 0 0; font-weight: 800; font-size: 17pt; color: #8a4c0c; }
   .url { margin: 2mm 0 0; font-weight: 700; font-size: 12pt; color: #5a4320; word-break: break-all; }
   .tag { margin-top: auto; font-weight: 800; font-size: 16pt; color: #2f5a44; }
+  .shot .tip { display: none; } .shot .page { margin: 0; } html.shot, .shot body { background: #f6dfa6; }
   @media print { html, body { background: none; } .tip { display: none; } .page { margin: 0; } }
 </style>
 </head>
 <body>
+<script>if (location.hash === "#shot") document.documentElement.classList.add("shot");</script>
 <p class="tip">โปสเตอร์ A4 สำหรับติดหน้าบูธหรือจุดลงทะเบียน กด Ctrl+P (มือถือ: แชร์ › พิมพ์) เลือกกระดาษ A4 ปิด "หัวกระดาษและท้ายกระดาษ" และเปิด "กราฟิกพื้นหลัง" แล้วบันทึกเป็น PDF หรือสั่งพิมพ์ได้เลย</p>
 <section class="page">
   <p class="host">คณะแพทยศาสตร์ มหาวิทยาลัยขอนแก่น</p>

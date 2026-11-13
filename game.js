@@ -282,17 +282,17 @@
     // ชื่องานด้านบน เพื่อประชาสัมพันธ์งาน
     const ev = S();
         if (ev.eventName) {
-      const g = x.createLinearGradient(0, 150, 0, 230);
+      const g = x.createLinearGradient(0, 255, 0, 335);
       g.addColorStop(0, "#fff3c4"); g.addColorStop(1, "#f0b94e");
-      x.fillStyle = g; x.font = font(700, 80, "Charmonman"); x.fillText(ev.eventName, 540, 185);
+      x.fillStyle = g; x.font = font(700, 80, "Charmonman"); x.fillText(ev.eventName, 540, 290);
     }
-    if (ev.eventHost) { x.fillStyle = "#fff4d6"; x.font = font(600, 28); x.fillText(ev.eventHost, 540, 262); }
+    if (ev.eventHost) { x.fillStyle = "#fff4d6"; x.font = font(600, 28); x.fillText(ev.eventHost, 540, 366); }
     const sub = [ev.eventDate, state.nick ? `การ์ดผู้เยียวยาของ ${state.nick}` : `เกม${ev.title}`].filter(Boolean).join("  ·  ");
-    x.fillStyle = "#fff4d6"; x.font = font(500, 26); x.fillText(sub, 540, 308);
+    x.fillStyle = "#fff4d6"; x.font = font(500, 26); x.fillText(sub, 540, 410);
     x.shadowBlur = 0;
 
     // กรอบการ์ด
-    const X = 110, Y = 350, W = 860, H = 1250;
+    const X = 110, Y = 450, W = 860, H = 1150;
     const frame = x.createLinearGradient(X, Y, X + W, Y + H);
     if (rare) { frame.addColorStop(0, "#fff0b5"); frame.addColorStop(.35, "#d9a441"); frame.addColorStop(.6, "#fff7d8"); frame.addColorStop(1, "#b07a1f"); }
     else { frame.addColorStop(0, "#9fd0b4"); frame.addColorStop(.5, "#59836a"); frame.addColorStop(1, "#2f5a44"); }
@@ -349,11 +349,11 @@
 
     // แท็กเพื่อน เว้นพื้นที่ให้วางสติกเกอร์ mention
     x.textAlign = "center";
-    x.fillStyle = "rgba(255,255,255,.1)"; rounded(x, 110, 1640, 860, 110, 22); x.fill();
-    x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1640, 860, 110, 22); x.stroke(); x.setLineDash([]);
-    x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 540, 1678);
-    x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 540, 1722);
-    if (ev.eventTag) { x.fillStyle = "#f0c46a"; x.font = font(700, 34); x.fillText(ev.eventTag, 540, 1800); }
+    x.fillStyle = "rgba(255,255,255,.1)"; rounded(x, 110, 1620, 860, 100, 22); x.fill();
+    x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1620, 860, 100, 22); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 540, 1654);
+    x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 540, 1696);
+    if (ev.eventTag) { x.fillStyle = "#f0c46a"; x.font = font(700, 34); x.fillText(ev.eventTag, 540, 1762); }
 
     const url = c.toDataURL("image/png");
     const blob = await new Promise(r => c.toBlob(r, "image/png"));

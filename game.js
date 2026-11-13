@@ -279,8 +279,16 @@
     if (art) { x.save(); x.filter = "blur(40px) brightness(.45)"; cover(x, art, -60, -60, 1200, 2040); x.restore(); }
     x.textAlign = "center"; x.textBaseline = "middle";
     x.shadowColor = "rgba(0,0,0,.85)"; x.shadowBlur = 18;
-    x.fillStyle = "#fff4d6"; x.font = font(700, 58, "Charmonman"); x.fillText(S().title, 540, 236);
-    x.font = font(600, 30); x.fillText(state.nick ? `การ์ดผู้เยียวยาของ ${state.nick}` : "การ์ดผู้เยียวยาของฉัน", 540, 300);
+    // ชื่องานด้านบน เพื่อประชาสัมพันธ์งาน
+    const ev = S();
+        if (ev.eventName) {
+      const g = x.createLinearGradient(0, 150, 0, 230);
+      g.addColorStop(0, "#fff3c4"); g.addColorStop(1, "#f0b94e");
+      x.fillStyle = g; x.font = font(700, 80, "Charmonman"); x.fillText(ev.eventName, 540, 185);
+    }
+    if (ev.eventHost) { x.fillStyle = "#fff4d6"; x.font = font(600, 28); x.fillText(ev.eventHost, 540, 262); }
+    const sub = [ev.eventDate, state.nick ? `การ์ดผู้เยียวยาของ ${state.nick}` : `เกม${ev.title}`].filter(Boolean).join("  ·  ");
+    x.fillStyle = "#fff4d6"; x.font = font(500, 26); x.fillText(sub, 540, 308);
     x.shadowBlur = 0;
 
     // กรอบการ์ด
@@ -345,6 +353,7 @@
     x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1640, 860, 110, 22); x.stroke(); x.setLineDash([]);
     x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 540, 1678);
     x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 540, 1722);
+    if (ev.eventTag) { x.fillStyle = "#f0c46a"; x.font = font(700, 34); x.fillText(ev.eventTag, 540, 1800); }
 
     const url = c.toDataURL("image/png");
     const blob = await new Promise(r => c.toBlob(r, "image/png"));

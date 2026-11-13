@@ -347,32 +347,154 @@
     x.fillStyle = "#3b342a"; x.font = font(500, 26);
     wrap(x, s.fortune, W - 120).slice(0, 2).forEach((l, i) => x.fillText(l, X + 58, y + 58 + i * 38));
 
-    // แท็กเพื่อน เว้นพื้นที่ให้วางสติกเกอร์ mention
+    // แท็กเพื่อน เว้นพื้นที่ให้วางสติกเกอร์ mention ด้านซ้าย และ QR ให้คนที่เห็นสตอรี่สแกนมาเล่นด้านขวา
+    const qr = ev.qr ? await loadImage(ev.qr) : null;
+    const TW = qr ? 650 : 860;
     x.textAlign = "center";
-    x.fillStyle = "rgba(255,255,255,.1)"; rounded(x, 110, 1620, 860, 100, 22); x.fill();
-    x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1620, 860, 100, 22); x.stroke(); x.setLineDash([]);
-    x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 540, 1654);
-    x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 540, 1696);
-    if (ev.eventTag) { x.fillStyle = "#f0c46a"; x.font = font(700, 34); x.fillText(ev.eventTag, 540, 1762); }
+    x.fillStyle = "rgba(255,255,255,.1)"; rounded(x, 110, 1620, TW, 100, 22); x.fill();
+    x.strokeStyle = "rgba(255,244,214,.55)"; x.setLineDash([12, 10]); x.lineWidth = 3; rounded(x, 110, 1620, TW, 100, 22); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#fff4d6"; x.font = font(700, 32); x.fillText(S().tagline, 110 + TW / 2, 1654);
+    x.fillStyle = "rgba(255,244,214,.75)"; x.font = font(500, 24); x.fillText("วางสติกเกอร์ @ ตรงนี้", 110 + TW / 2, 1696);
+    if (ev.eventTag) { x.fillStyle = "#f0c46a"; x.font = font(700, 34); x.fillText(ev.eventTag, 110 + TW / 2, 1762); }
+    if (qr) {
+      x.fillStyle = "#fffaf0"; rounded(x, 790, 1606, 180, 180, 18); x.fill();
+      x.drawImage(qr, 800, 1616, 160, 160);
+      x.fillStyle = "#fff4d6"; x.font = font(700, 24); x.fillText("สแกนเล่นเลย", 880, 1812);
+    }
 
-    const url = c.toDataURL("image/png");
-    const blob = await new Promise(r => c.toBlob(r, "image/png"));
-    const file = blob && new File([blob], "healer-card.png", { type: "image/png" });
-    const canShare = file && navigator.canShare && navigator.canShare({ files: [file] });
+    // การ์ด Rare ทำเป็นวิดีโอสั้นที่การ์ดเรืองแสงและมีประกายวิ่งผ่าน ถ้าเครื่องทำวิดีโอไม่ได้จะใช้รูปนิ่งแทน
+    const box = { X, Y, W, H, AX, AY, AW, AH };
+    const pngBlob = await new Promise(r => c.toBlob(r, "image/png"));
+    let video = null;
+    if (rare && pickVideoType()) {
+      const busy = openViewer(`<p class="making">✨ กำลังทำให้การ์ด Rare เรืองแสง...</p>`);
+      video = await recordRare(c, box).catch(() => null);
+      busy.remove();
+    }
+    showShare(s, pngBlob, video);
+  }
+
+  // วาดประกายของการ์ด Rare ทีละเฟรม ทับภาพนิ่งที่วาดไว้แล้ว รอบละ 2.5 วินาทีให้วนต่อกันได้เนียน
+  function rareFrame(x, base, b, t) {
+    const P = 2.5, k = (t % P) / P;
+    x.globalAlpha = 1; x.globalCompositeOperation = "source-over";
+    x.drawImage(base, 0, 0);
+    const pulse = .5 + .5 * Math.sin(k * Math.PI * 2);
+    // ขอบทองเรืองแสงเป็นจังหวะ
+    x.save();
+    x.shadowColor = `rgba(255,214,110,${.55 + .4 * pulse})`; x.shadowBlur = 40 + 50 * pulse;
+    x.strokeStyle = `rgba(255,236,170,${.6 + .4 * pulse})`; x.lineWidth = 8;
+    rounded(x, b.X + 4, b.Y + 4, b.W - 8, b.H - 8, 32); x.stroke();
+    x.restore();
+    x.save(); rounded(x, b.X, b.Y, b.W, b.H, 34); x.clip();
+    // ฟอยล์รุ้งไล่สีบนภาพ
+    x.globalCompositeOperation = "overlay"; x.globalAlpha = .5;
+    const f = x.createLinearGradient(b.AX, b.AY, b.AX + b.AW, b.AY + b.AH);
+    [330, 200, 150, 50, 330].forEach((h, i, a) => f.addColorStop(i / (a.length - 1), `hsla(${(h + k * 360) % 360},90%,70%,.65)`));
+    x.fillStyle = f; x.fillRect(b.AX, b.AY, b.AW, b.AH);
+    // แสงวาววิ่งเฉียงผ่านทั้งใบ
+    const sweep = -700 + k * 2400;
+    const g = x.createLinearGradient(b.X + sweep - 300, b.Y, b.X + sweep + 300, b.Y + 600);
+    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(.42, "rgba(255,248,220,0)");
+    g.addColorStop(.5, "rgba(255,255,255,.6)"); g.addColorStop(.58, "rgba(255,248,220,0)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    x.globalCompositeOperation = "lighter"; x.globalAlpha = .75;
+    x.fillStyle = g; x.fillRect(b.X, b.Y, b.W, b.H);
+    x.restore();
+    // ประกายดาวรอบการ์ด
+    for (let i = 0; i < 18; i++) {
+      const px = b.X - 30 + ((i * 337) % (b.W + 60)), py = b.Y - 30 + ((i * 523) % (b.H + 60));
+      const tw = Math.sin(k * Math.PI * 2 * 2 + i * 1.7);
+      if (tw < .05) continue;
+      const r = 10 + 18 * tw;
+      x.save(); x.translate(px, py); x.globalAlpha = tw; x.fillStyle = "#fff6cf";
+      x.shadowColor = "rgba(255,220,120,.9)"; x.shadowBlur = 18;
+      x.beginPath(); x.moveTo(0, -r); x.quadraticCurveTo(0, 0, r, 0); x.quadraticCurveTo(0, 0, 0, r); x.quadraticCurveTo(0, 0, -r, 0); x.quadraticCurveTo(0, 0, 0, -r); x.fill();
+      x.restore();
+    }
+  }
+
+  function pickVideoType() {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return "";
+    // Instagram รับ MP4 ได้แน่นอน ส่วน WebM ใช้เป็นทางสำรอง
+    return ["video/mp4;codecs=avc1.42E01F", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+  }
+
+  function recordRare(base, b) {
+    const type = pickVideoType();
+    const v = document.createElement("canvas");
+    v.width = base.width; v.height = base.height;
+    const x = v.getContext("2d");
+    rareFrame(x, base, b, 0);
+    const stream = v.captureStream(30);
+    const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 6e6 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    return new Promise((resolve, reject) => {
+      const DUR = 5, t0 = performance.now();
+      // ใช้ setInterval แทน requestAnimationFrame เพื่อให้อัดต่อได้แม้จอหรี่
+      const timer = setInterval(() => {
+        const t = (performance.now() - t0) / 1000;
+        rareFrame(x, base, b, Math.min(t, DUR));
+        if (t >= DUR) { clearInterval(timer); rec.stop(); }
+      }, 1000 / 30);
+      rec.onstop = () => {
+        stream.getTracks().forEach(tr => tr.stop());
+        const blob = new Blob(chunks, { type: type.split(";")[0] });
+        if (blob.size > 1000) resolve(blob); else reject(new Error("empty"));
+      };
+      rec.onerror = e => { clearInterval(timer); reject(e); };
+      rec.start(250);
+    });
+  }
+
+  function openViewer(inner) {
     const view = document.createElement("div");
     view.className = "viewer";
-    view.innerHTML = `<div>
-      <img src="${url}" alt="การ์ดผู้เยียวยาสาขา ${esc(s.name)}">
-      <p>${canShare ? "กดแชร์ แล้วเลือก Instagram หรือกดค้างที่รูปเพื่อบันทึก" : "กดค้างที่รูปเพื่อบันทึก แล้วนำไปลงสตอรี่"}</p>
-      <div class="actions">
-        ${canShare ? `<button class="btn" id="share" type="button">แชร์</button>` : `<a class="btn" href="${url}" download="healer-card.png">ดาวน์โหลดรูป</a>`}
-        <button class="btn ghost" id="closeV" type="button">ปิด</button>
-      </div>
-    </div>`;
+    view.innerHTML = `<div>${inner}</div>`;
     document.body.append(view);
-    view.querySelector("#closeV").addEventListener("click", () => view.remove());
+    return view;
+  }
+
+  // ลิงก์ให้คนที่เห็นสตอรี่กดมาเล่น ตั้งใน settings ได้ ถ้าว่างใช้ที่อยู่หน้าเว็บนี้
+  function playUrl() {
+    return S().playUrl || location.origin + location.pathname;
+  }
+
+  async function copyLink() {
+    try { await navigator.clipboard.writeText(playUrl()); return true; } catch (e) { return false; }
+  }
+
+  function showShare(s, pngBlob, video) {
+    const ext = video ? (video.type.includes("mp4") ? "mp4" : "webm") : "png";
+    const file = video ? new File([video], `healer-card-rare.${ext}`, { type: video.type }) : new File([pngBlob], "healer-card.png", { type: "image/png" });
+    const url = URL.createObjectURL(file);
+    const pngUrl = video ? URL.createObjectURL(pngBlob) : url;
+    const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const media = video
+      ? `<video src="${url}" autoplay loop muted playsinline></video>`
+      : `<img src="${url}" alt="การ์ดผู้เยียวยาสาขา ${esc(s.name)}">`;
+    const what = video ? "วิดีโอ" : "รูป";
+    const view = openViewer(`
+      ${media}
+      <p>${canShare ? "กดแชร์ แล้วเลือก Instagram Stories" : `กดดาวน์โหลด${what} แล้วนำไปลงสตอรี่`}</p>
+      <p class="link-tip">เราคัดลอกลิงก์เกมให้ตอนกดแชร์ ในสตอรี่กดสติกเกอร์ <b>ลิงก์</b> แล้ววาง เพื่อนจะกดมาเล่นต่อได้เลย</p>
+      <div class="actions">
+        ${canShare ? `<button class="btn" id="share" type="button">แชร์${what}ลงสตอรี่</button>` : `<a class="btn" id="dl" href="${url}" download="${file.name}">ดาวน์โหลด${what}</a>`}
+        ${video ? `<a class="btn ghost" href="${pngUrl}" download="healer-card.png">ใช้รูปนิ่งแทน</a>` : ""}
+        <button class="btn ghost" id="copyLink" type="button">คัดลอกลิงก์เกม</button>
+        <button class="btn ghost" id="closeV" type="button">ปิด</button>
+      </div>`);
+    const tip = msg => { const t = view.querySelector(".link-tip"); t.textContent = msg; t.classList.add("ok"); };
+    view.querySelector("#closeV").addEventListener("click", () => { view.remove(); URL.revokeObjectURL(url); if (pngUrl !== url) URL.revokeObjectURL(pngUrl); });
+    view.querySelector("#copyLink").addEventListener("click", async () => tip(await copyLink() ? "คัดลอกลิงก์แล้ว ไปวางในสติกเกอร์ลิงก์ของสตอรี่ได้เลย" : `ลิงก์เกม: ${playUrl()}`));
+    const dl = view.querySelector("#dl");
+    if (dl) dl.addEventListener("click", () => { copyLink(); });
     const share = view.querySelector("#share");
-    if (share) share.addEventListener("click", () => navigator.share({ files: [file], text: S().shareText }).catch(() => {}));
+    if (share) share.addEventListener("click", () => {
+      // คัดลอกลิงก์ไว้ก่อน แล้วเปิดหน้าแชร์ทันทีในจังหวะที่ผู้เล่นกด
+      copyLink();
+      navigator.share({ files: [file], text: `${S().shareText} ${playUrl()}` }).catch(() => {});
+    });
   }
 
   // ---------- เก็บข้อมูล ----------

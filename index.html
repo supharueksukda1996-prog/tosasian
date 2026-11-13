@@ -10,7 +10,7 @@
 <script>
   // ถ้าเครื่องผู้เล่นยังจำหน้าเก่าไว้ ให้โหลดหน้าใหม่เอง (เลขต้องตรงกับไฟล์ version.txt)
   (function () {
-    var mine = "202611132322";
+    var mine = "202611132325";
     fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : mine; }).then(function (latest) {
       latest = latest.trim();
       if (latest && latest !== mine && location.search.indexOf("v=" + latest) < 0) location.replace(location.pathname + "?v=" + latest);
@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Charmonman:wght@400;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611132322">
+<link rel="stylesheet" href="style.css?v=202611132325">
 </head>
 <body>
 <canvas id="view" aria-hidden="true"></canvas>
@@ -28,9 +28,9 @@
 <div class="flash" id="flash" aria-hidden="true"></div>
 <div class="pack" id="pack" hidden></div>
 <main id="stage" aria-live="polite"></main>
-<script src="data.js?v=202611132322"></script>
-<script src="engine.js?v=202611132322"></script>
-<script src="scenes.js?v=202611132322"></script>
-<script src="game.js?v=202611132322"></script>
+<script src="data.js?v=202611132325"></script>
+<script src="engine.js?v=202611132325"></script>
+<script src="scenes.js?v=202611132325"></script>
+<script src="game.js?v=202611132325"></script>
 </body>
 </html>

@@ -216,12 +216,20 @@
           <p class="disclaimer">ออกแบบจากแนวคิดงานวิจัยด้านความสนใจอาชีพและการเลือกสาขา เพื่อความสนุก ไม่ใช่การวัดทางวิชาการ</p>
         </div>
         <div class="actions">
-          <button class="btn" type="button" id="save">แชร์ลงสตอรี่</button>
+          <button class="btn" type="button" id="save" disabled>กำลังเตรียมการ์ดสำหรับสตอรี่...</button>
           <button class="btn ghost light" type="button" id="again">เล่นอีกครั้ง</button>
         </div>
       </section>`;
     scrollTo(0, 0);
-    document.getElementById("save").addEventListener("click", makeStory);
+    const save = document.getElementById("save");
+    save.addEventListener("click", shareStory);
+    // ทำรูปหรือวิดีโอรอไว้ก่อน พอกดปุ่มจะเปิดหน้าแชร์ได้ทันที
+    state.story = null;
+    makeStory().then(story => {
+      state.story = story;
+      save.disabled = false;
+      save.textContent = story.video ? "✨ แชร์การ์ด Rare ลงสตอรี่" : "แชร์ลงสตอรี่";
+    }).catch(() => { save.disabled = false; save.textContent = "แชร์ลงสตอรี่"; });
     document.getElementById("again").addEventListener("click", async () => {
       stage.innerHTML = "";
       dim.classList.remove("on");
@@ -365,13 +373,30 @@
     // การ์ด Rare ทำเป็นวิดีโอสั้นที่การ์ดเรืองแสงและมีประกายวิ่งผ่าน ถ้าเครื่องทำวิดีโอไม่ได้จะใช้รูปนิ่งแทน
     const box = { X, Y, W, H, AX, AY, AW, AH };
     const pngBlob = await new Promise(r => c.toBlob(r, "image/png"));
-    let video = null;
-    if (rare && pickVideoType()) {
-      const busy = openViewer(`<p class="making">✨ กำลังทำให้การ์ด Rare เรืองแสง...</p>`);
-      video = await recordRare(c, box).catch(() => null);
-      busy.remove();
+    const video = rare && pickVideoType() ? await recordRare(c, box).catch(() => null) : null;
+    const file = video
+      ? new File([video], `healer-card-rare.${video.type.includes("mp4") ? "mp4" : "webm"}`, { type: video.type })
+      : new File([pngBlob], "healer-card.png", { type: "image/png" });
+    // ถ้าเครื่องแชร์วิดีโอไม่ได้ ให้ลองแชร์รูปนิ่งแทน
+    const png = new File([pngBlob], "healer-card.png", { type: "image/png" });
+    const can = f => !!(navigator.canShare && navigator.canShare({ files: [f] }));
+    const shareFile = can(file) ? file : can(png) ? png : null;
+    return { s, pngBlob, video, file, shareFile };
+  }
+
+  // กดครั้งเดียวแล้วเปิดหน้าแชร์ของมือถือ เลือก Instagram แล้วลงสตอรี่ได้เลย
+  function shareStory() {
+    const story = state.story;
+    if (!story) return;
+    copyLink();
+    if (story.shareFile) {
+      navigator.share({ files: [story.shareFile] }).catch(e => {
+        // ผู้เล่นกดยกเลิกเองไม่ต้องทำอะไร ถ้าแชร์ไม่สำเร็จจริงค่อยเปิดหน้าบันทึกรูปให้
+        if (e && e.name !== "AbortError") showShare(story);
+      });
+    } else {
+      showShare(story);
     }
-    showShare(s, pngBlob, video);
   }
 
   // วาดประกายของการ์ด Rare ทีละเฟรม ทับภาพนิ่งที่วาดไว้แล้ว รอบละ 2.5 วินาทีให้วนต่อกันได้เนียน
@@ -464,22 +489,21 @@
     try { await navigator.clipboard.writeText(playUrl()); return true; } catch (e) { return false; }
   }
 
-  function showShare(s, pngBlob, video) {
-    const ext = video ? (video.type.includes("mp4") ? "mp4" : "webm") : "png";
-    const file = video ? new File([video], `healer-card-rare.${ext}`, { type: video.type }) : new File([pngBlob], "healer-card.png", { type: "image/png" });
+  function showShare(story) {
+    const { s, pngBlob, video, file } = story;
     const url = URL.createObjectURL(file);
     const pngUrl = video ? URL.createObjectURL(pngBlob) : url;
-    const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const inApp = /Line\/|FBAN|FBAV|Instagram|TikTok/i.test(navigator.userAgent);
     const media = video
       ? `<video src="${url}" autoplay loop muted playsinline></video>`
       : `<img src="${url}" alt="การ์ดผู้เยียวยาสาขา ${esc(s.name)}">`;
     const what = video ? "วิดีโอ" : "รูป";
     const view = openViewer(`
       ${media}
-      <p>${canShare ? "กดแชร์ แล้วเลือก Instagram Stories" : `กดดาวน์โหลด${what} แล้วนำไปลงสตอรี่`}</p>
-      <p class="link-tip">เราคัดลอกลิงก์เกมให้ตอนกดแชร์ ในสตอรี่กดสติกเกอร์ <b>ลิงก์</b> แล้ววาง เพื่อนจะกดมาเล่นต่อได้เลย</p>
+      <p>${inApp ? "แอปนี้ไม่ให้แชร์ตรง กดเมนู ⋯ แล้วเลือกเปิดใน Safari หรือ Chrome จะกดแชร์ลงสตอรี่ได้ทันที" : `เครื่องนี้แชร์ตรงไม่ได้ กดค้างที่${what}หรือกดบันทึก แล้วนำไปลงสตอรี่`}</p>
+      <p class="link-tip">ในสตอรี่กดสติกเกอร์ <b>ลิงก์</b> แล้ววางลิงก์เกม เพื่อนจะกดมาเล่นต่อได้เลย</p>
       <div class="actions">
-        ${canShare ? `<button class="btn" id="share" type="button">แชร์${what}ลงสตอรี่</button>` : `<a class="btn" id="dl" href="${url}" download="${file.name}">ดาวน์โหลด${what}</a>`}
+        <a class="btn" href="${url}" download="${file.name}">บันทึก${what}</a>
         ${video ? `<a class="btn ghost" href="${pngUrl}" download="healer-card.png">ใช้รูปนิ่งแทน</a>` : ""}
         <button class="btn ghost" id="copyLink" type="button">คัดลอกลิงก์เกม</button>
         <button class="btn ghost" id="closeV" type="button">ปิด</button>
@@ -487,14 +511,6 @@
     const tip = msg => { const t = view.querySelector(".link-tip"); t.textContent = msg; t.classList.add("ok"); };
     view.querySelector("#closeV").addEventListener("click", () => { view.remove(); URL.revokeObjectURL(url); if (pngUrl !== url) URL.revokeObjectURL(pngUrl); });
     view.querySelector("#copyLink").addEventListener("click", async () => tip(await copyLink() ? "คัดลอกลิงก์แล้ว ไปวางในสติกเกอร์ลิงก์ของสตอรี่ได้เลย" : `ลิงก์เกม: ${playUrl()}`));
-    const dl = view.querySelector("#dl");
-    if (dl) dl.addEventListener("click", () => { copyLink(); });
-    const share = view.querySelector("#share");
-    if (share) share.addEventListener("click", () => {
-      // คัดลอกลิงก์ไว้ก่อน แล้วเปิดหน้าแชร์ทันทีในจังหวะที่ผู้เล่นกด
-      copyLink();
-      navigator.share({ files: [file], text: `${S().shareText} ${playUrl()}` }).catch(() => {});
-    });
   }
 
   // ---------- เก็บข้อมูล ----------

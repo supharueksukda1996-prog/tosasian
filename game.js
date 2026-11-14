@@ -9,26 +9,33 @@
   const Music = (() => {
     const btn = document.getElementById("sound");
     let audio = null, mode = "", muted = false;
-    try { muted = localStorage.getItem("music-muted") === "1"; } catch (e) { /* ไม่มีที่เก็บ */ }
+    try { muted = localStorage.getItem("music-muted-v2") === "1"; } catch (e) { /* ไม่มีที่เก็บ */ }
     const vol = () => Math.max(0, Math.min(1, Number(S().musicVolume) || .45));
+    // ไอคอนลำโพงสีทองเข้ากับธีม แสดงสถานะตามเสียงที่ดังอยู่จริง
+    const ICON_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    const ICON_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    const audible = () => !muted && (mode === "synth" || (mode === "file" && audio && !audio.paused));
     const paint = () => {
       btn.hidden = !GAME.settings.music;
-      btn.textContent = muted ? "🔇" : "🔊";
-      btn.setAttribute("aria-pressed", String(!muted));
-      btn.setAttribute("aria-label", muted ? "เปิดเพลง" : "ปิดเพลง");
+      const on = audible();
+      btn.innerHTML = on ? ICON_ON : ICON_OFF;
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.setAttribute("aria-label", on ? "ปิดเพลง" : "เปิดเพลง");
     };
     const fadeFile = (target, ms = 900) => {
       const a = audio;
       if (!a) return;
       const from = a.volume, t0 = performance.now();
-      const step = () => {
-        if (audio !== a) return;
+      // ใช้ตัวจับเวลาแทน requestAnimationFrame เพื่อให้เฟดจบแม้จอหรี่หรือสลับแท็บ (iPhone ปรับ volume ไม่ได้ แต่ยังหยุดเพลงได้)
+      clearInterval(a._fade);
+      if (target > 0 && a.paused) a.play().then(paint).catch(paint);
+      a._fade = setInterval(() => {
+        if (audio !== a) { clearInterval(a._fade); return; }
         const k = Math.min(1, (performance.now() - t0) / ms);
         a.volume = from + (target - from) * k;
-        if (k < 1) requestAnimationFrame(step); else if (target === 0) a.pause();
-      };
-      if (target > 0 && a.paused) a.play().catch(() => {});
-      step();
+        if (k >= 1) { clearInterval(a._fade); if (target === 0) a.pause(); paint(); }
+      }, 30);
     };
     const level = (v, ms) => {
       if (mode === "synth" && window.Synth) Synth.start(v);
@@ -68,24 +75,31 @@
         mode = "file";
         audio = new Audio(src);
         audio.loop = true; audio.preload = "auto"; audio.volume = 0;
+        audio.setAttribute("playsinline", "");
+        audio.addEventListener("playing", paint);
+        audio.addEventListener("pause", paint);
         // ไฟล์โหลดไม่ได้ ให้ใช้ดนตรีสังเคราะห์แทน
         audio.addEventListener("error", () => { mode = ""; useSynth(); });
         paint();
         if (!muted) fadeFile(vol());
       } else useSynth();
     }
-    const firstTouch = e => {
+    // มือถืออนุญาตให้เล่นเสียงเฉพาะตอนแตะ ถ้าแตะแรกพลาด (เช่นนิ้วเลื่อนจอ) จะลองใหม่ทุกครั้งที่แตะจนกว่าเพลงจะดัง
+    const kick = e => {
       if (e && btn.contains(e.target)) return;
-      ["touchend", "click", "keydown"].forEach(ev => document.removeEventListener(ev, firstTouch, true));
-      start();
+      if (!mode) start();
+      else if (!muted && mode === "file" && audio && audio.paused) fadeFile(vol());
+      else if (!muted && mode === "synth") Synth.resume();
     };
-    ["touchend", "click", "keydown"].forEach(ev => document.addEventListener(ev, firstTouch, true));
+    ["pointerup", "touchend", "click", "keydown"].forEach(ev => document.addEventListener(ev, kick, true));
     btn.addEventListener("click", e => {
-      if (!mode) { e.stopPropagation(); muted = false; start(); paint(); return; }
-      muted = !muted;
-      try { localStorage.setItem("music-muted", muted ? "1" : "0"); } catch (e) { /* ไม่มีที่เก็บ */ }
+      e.stopPropagation();
+      // ปุ่มทำงานตามเสียงที่ได้ยินจริง: เงียบอยู่ก็เปิด ดังอยู่ก็ปิด
+      muted = audible();
+      try { localStorage.setItem("music-muted-v2", muted ? "1" : "0"); } catch (err) { /* ไม่มีที่เก็บ */ }
+      if (!mode) start();
+      else level(muted ? 0 : vol(), 400);
       paint();
-      level(muted ? 0 : vol(), 400);
     });
     // พักเพลงเมื่อสลับแอปหรือปิดจอ แล้วเล่นต่อเมื่อกลับมา
     document.addEventListener("visibilitychange", () => {
@@ -124,6 +138,7 @@
 
   // ---------- หน้าแรก ----------
   function showIntro() {
+    lockScroll(false);
     pack.hidden = true;
     dim.classList.remove("on");
     stage.innerHTML = `
@@ -154,15 +169,19 @@
       state.nick = document.getElementById("nick").value.trim();
       const aud = document.getElementById("aud");
       state.audience = aud ? aud.value : "";
-      // ใช้รหัสเดิมเมื่อกดเล่นอีกครั้ง จะได้จับคู่ผลทุกรอบกับแบบสอบถามชุดเดียวกัน
-      state.session = state.session || Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      // ทุกรอบเป็นผู้เล่นใหม่ ได้รหัสใหม่และเริ่มแบบสอบถามจากหน้าว่าง
+      state.session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      state.surveyRaw = {};
       Music.start();
-      if (surveyOn() && !state.surveyDone) showSurvey(0);
+      if (surveyOn()) showSurvey(0);
       else startJourney();
     });
   }
 
+  const lockScroll = on => { document.documentElement.classList.toggle("lock", on); if (on) scrollTo(0, 0); };
+
   function startJourney() {
+    lockScroll(true);
     state.picks = [];
     state.startedAt = Date.now();
     dim.classList.remove("on");
@@ -205,6 +224,7 @@
   }
 
   function showSurvey(i) {
+    lockScroll(false);
     const parts = GAME.survey.parts, part = parts[i], last = i === parts.length - 1;
     pack.hidden = true;
     dim.classList.add("on");
@@ -238,7 +258,6 @@
       const flat = flattenSurvey();
       state.audience = flat.year || "";
       send({ type: "survey", ...flat });
-      state.surveyDone = true;
       startJourney();
     });
   }
@@ -495,6 +514,7 @@
   }
 
   function showResult() {
+    lockScroll(false);
     const s = state.result;
     stage.innerHTML = `
       <section class="result">

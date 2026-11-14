@@ -332,7 +332,7 @@
           <p class="trait"><b>อีกสาขาที่เข้ากับคุณ</b>${esc(state.runnerUp.th || state.runnerUp.name)} (${esc(state.runnerUp.name)})</p>
           <div class="mission"><b>ภารกิจต่อไป</b>แวะซุ้ม ${esc(s.name)} แล้วลองถามอาจารย์ว่า<q>${esc(s.ask)}</q></div>
           <p class="disclaimer">ออกแบบจากแนวคิดงานวิจัยด้านความสนใจอาชีพและการเลือกสาขา เพื่อความสนุก ไม่ใช่การวัดทางวิชาการ</p>
-          <p class="disclaimer">เรื่องและตัวละครแต่งขึ้นใหม่ โดยได้แรงบันดาลใจจากวรรณคดีรามายณะและรามเกียรติ์ ภาพประกอบสร้างด้วย AI ใน Canva</p>
+          <p class="disclaimer">เรื่องและตัวละครแต่งขึ้นใหม่ โดยได้แรงบันดาลใจจากวรรณคดีรามายณะและรามเกียรติ์ ภาพประกอบสร้างด้วย AI ใน Canva เพลง Om Hanumate Namaha โดย kalsstockmedia จาก Pixabay</p>
         </div>
         <div class="actions">
           <button class="btn" type="button" id="save" disabled>กำลังเตรียมการ์ดสำหรับสตอรี่...</button>

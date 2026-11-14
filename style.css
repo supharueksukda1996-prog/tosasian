@@ -213,3 +213,30 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .sound { position: fixed; z-index: 6; top: max(8px, env(safe-area-inset-top)); left: max(10px, calc(50% - 240px)); width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(20, 16, 24, .62); color: #fff; font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(4px); }
 .sound[hidden] { display: none; }
 .sound:focus-visible { outline: 3px solid #fff3c9; outline-offset: 2px; }
+
+/* ---------- แบบสอบถามก่อนเริ่มเล่น ---------- */
+.survey { width: min(100%, 520px); margin: 0 auto; padding: calc(56px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom)); }
+.survey-sheet { padding: 18px 16px 16px; }
+.survey-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .9rem; color: var(--sage-deep); }
+.survey-top span { padding: 2px 10px; border-radius: 999px; background: var(--sage); color: #fff; font-weight: 700; font-size: .8rem; }
+.survey-intro { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: #eef4ec; font-size: .86rem; line-height: 1.5; color: var(--ink-soft); }
+.survey h2 { margin: 14px 0 6px; font-size: 1.15rem; color: var(--ink); }
+.q { margin: 0; padding: 12px 0 14px; border: 0; border-bottom: 1.5px dashed var(--line); min-width: 0; }
+.q legend { padding: 0; margin-bottom: 8px; font-weight: 700; font-size: 1rem; line-height: 1.45; }
+.q legend small { display: block; font-weight: 400; font-size: .82rem; color: var(--ink-soft); }
+.req { color: #c0392b; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip { position: relative; display: inline-flex; cursor: pointer; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span { display: block; min-height: 40px; padding: 8px 13px; border-radius: 999px; border: 1.5px solid var(--line); background: #fffdf6; font-size: .92rem; line-height: 1.35; }
+.chip input:checked + span { background: var(--sage); border-color: var(--sage-deep); color: #fff; font-weight: 600; }
+.chip input:focus-visible + span { outline: 3px solid var(--sage); outline-offset: 2px; }
+.chip.off { opacity: .45; cursor: default; }
+.other-text, .text-answer { display: block; width: 100%; min-height: 44px; margin-top: 8px; padding: 9px 12px; background: #fffdf6; border: 1.5px solid var(--line); border-radius: 11px; font: inherit; font-size: 16px; }
+.other-text[hidden] { display: none; }
+.field.rank { margin: 0 0 8px; }
+.field.rank .other-text { margin-top: 6px; }
+.q-err { margin: 8px 0 0; color: #c0392b; font-size: .86rem; font-weight: 600; }
+.q.invalid legend { color: #c0392b; }
+.survey-req { margin: 10px 0 0; font-size: .8rem; color: var(--ink-soft); }
+.survey-nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; margin-top: 14px; }

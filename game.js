@@ -138,7 +138,7 @@
           <label class="field">ชื่อบนการ์ด <small>(ไม่บังคับ)</small>
             <input id="nick" maxlength="20" autocomplete="off" placeholder="ชื่อเล่นของคุณ">
           </label>
-          ${GAME.endpoint ? `<label class="field">คุณอยู่ชั้นปีไหน
+          ${GAME.endpoint && !surveyOn() ? `<label class="field">คุณอยู่ชั้นปีไหน
             <select id="aud" required>
               <option value="">เลือกชั้นปี</option>
               ${GAME.audience.map(a => `<option>${esc(a)}</option>`).join("")}
@@ -146,21 +146,197 @@
           </label>` : ""}
           ${inAppName() ? `<p class="inapp">กำลังเปิดใน ${inAppName()} ซึ่งแชร์การ์ดลงสตอรี่ไม่ได้ แนะนำกด <b>⋯</b> มุมขวาบน แล้วเลือก <b>เปิดในเบราว์เซอร์</b> ก่อนเริ่มเล่น</p>` : ""}
           <button class="btn" type="submit">เข้าร่วมกองทัพ</button>
-          ${GAME.endpoint ? `<p class="notice">ผู้จัดงานเก็บชั้นปี คำตอบ และผลลัพธ์แบบไม่ระบุตัวตน เพื่อใช้ปรับปรุงกิจกรรม ชื่อบนการ์ดจะไม่ถูกส่งออกจากเครื่อง การกดเริ่มถือว่ายินยอมตามนี้</p>` : ""}
+          ${GAME.endpoint && !surveyOn() ? `<p class="notice">ผู้จัดงานเก็บชั้นปี คำตอบ และผลลัพธ์แบบไม่ระบุตัวตน เพื่อใช้ปรับปรุงกิจกรรม ชื่อบนการ์ดจะไม่ถูกส่งออกจากเครื่อง การกดเริ่มถือว่ายินยอมตามนี้</p>` : ""}
         </form>
       </section>`;
     document.getElementById("intro").addEventListener("submit", e => {
       e.preventDefault();
       state.nick = document.getElementById("nick").value.trim();
-      state.audience = GAME.endpoint ? document.getElementById("aud").value : "";
-      state.picks = [];
-      state.startedAt = Date.now();
-      state.session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      pack.hidden = false;
-      renderProgress();
+      const aud = document.getElementById("aud");
+      state.audience = aud ? aud.value : "";
+      // ใช้รหัสเดิมเมื่อกดเล่นอีกครั้ง จะได้จับคู่ผลทุกรอบกับแบบสอบถามชุดเดียวกัน
+      state.session = state.session || Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       Music.start();
-      playChapter(0, true);
+      if (surveyOn() && !state.surveyDone) showSurvey(0);
+      else startJourney();
     });
+  }
+
+  function startJourney() {
+    state.picks = [];
+    state.startedAt = Date.now();
+    dim.classList.remove("on");
+    pack.hidden = false;
+    renderProgress();
+    playChapter(0, true);
+  }
+
+  // ---------- แบบสอบถามก่อนเริ่มเล่น ----------
+  const surveyOn = () => !!(GAME.survey && GAME.survey.on && GAME.survey.parts && GAME.survey.parts.length);
+  const OTHER = "__other";
+  state.surveyRaw = {};
+
+  function choiceHTML(q) {
+    const kind = q.type === "single" ? "radio" : "checkbox";
+    const opts = q.options.map(o => [o, o]);
+    if (q.other) opts.push([OTHER, q.other]);
+    return `<div class="chips">${opts.map(([v, text]) => `
+      <label class="chip"><input type="${kind}" name="${esc(q.id)}" value="${esc(v)}"><span>${esc(text)}</span></label>`).join("")}
+    </div>${q.other ? `<input class="other-text" data-for="${esc(q.id)}" maxlength="80" placeholder="โปรดระบุ" hidden>` : ""}`;
+  }
+
+  function rankHTML(q) {
+    const opts = q.options.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join("") + (q.other ? `<option value="${OTHER}">${esc(q.other)}</option>` : "");
+    return Array.from({ length: q.count || 3 }, (_, k) => `
+      <label class="field rank">อันดับ ${k + 1} ${k === 0 && q.required ? `<span class="req">*</span>` : "<small>(ไม่บังคับ)</small>"}
+        <select name="${esc(q.id)}${k + 1}"><option value="">เลือกสาขา</option>${opts}</select>
+        <input class="other-text" data-for="${esc(q.id)}${k + 1}" maxlength="80" placeholder="โปรดระบุสาขา" hidden>
+      </label>`).join("");
+  }
+
+  function questionHTML(q) {
+    const req = q.required ? ` <span class="req">*</span>` : "";
+    const hint = q.hint ? `<small>${esc(q.hint)}</small>` : "";
+    let body = "";
+    if (q.type === "single" || q.type === "multi") body = choiceHTML(q);
+    if (q.type === "rank") body = rankHTML(q);
+    if (q.type === "text") body = `<input class="text-answer" name="${esc(q.id)}" maxlength="80" autocomplete="off" placeholder="${esc(q.placeholder || "")}">`;
+    return `<fieldset class="q" data-id="${esc(q.id)}"><legend>${esc(q.label)}${req}${hint}</legend>${body}<p class="q-err" role="alert" hidden></p></fieldset>`;
+  }
+
+  function showSurvey(i) {
+    const parts = GAME.survey.parts, part = parts[i], last = i === parts.length - 1;
+    pack.hidden = true;
+    dim.classList.add("on");
+    stage.innerHTML = `
+      <section class="survey">
+        <form class="sheet survey-sheet" id="survey" novalidate>
+          <div class="survey-top"><b>ก่อนออกเดินทาง ขอถามสั้น ๆ</b><span>${i + 1}/${parts.length}</span></div>
+          ${i === 0 && GAME.survey.intro ? `<p class="survey-intro">${esc(GAME.survey.intro)}</p>` : ""}
+          <h2>${esc(part.title)}</h2>
+          ${part.questions.map(questionHTML).join("")}
+          <p class="survey-req"><span class="req">*</span> จำเป็นต้องตอบ</p>
+          <div class="survey-nav">
+            ${i > 0 ? `<button class="btn ghost" type="button" id="back">ย้อนกลับ</button>` : ""}
+            <button class="btn" type="submit">${last ? "เริ่มออกเดินทาง" : "ถัดไป"}</button>
+          </div>
+        </form>
+      </section>`;
+    scrollTo(0, 0);
+    const form = document.getElementById("survey");
+    restoreSurvey(form, part);
+    form.addEventListener("change", e => syncSurvey(form, part, e.target));
+    syncSurvey(form, part);
+    const back = document.getElementById("back");
+    if (back) back.addEventListener("click", () => { saveSurvey(form, part); showSurvey(i - 1); });
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      saveSurvey(form, part);
+      const bad = validateSurvey(form, part);
+      if (bad) { bad.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (!last) { showSurvey(i + 1); return; }
+      const flat = flattenSurvey();
+      state.audience = flat.year || "";
+      send({ type: "survey", ...flat });
+      state.surveyDone = true;
+      startJourney();
+    });
+  }
+
+  // แสดงช่องพิมพ์เมื่อเลือก "อื่น ๆ" และล็อกตัวเลือกเมื่อเลือกครบจำนวนสูงสุด
+  function syncSurvey(form, part) {
+    form.querySelectorAll(".other-text").forEach(box => {
+      const key = box.dataset.for;
+      const picked = [...form.querySelectorAll(`[name="${key}"]`)].some(el => (el.checked || el.tagName === "SELECT") && el.value === OTHER);
+      box.hidden = !picked;
+    });
+    part.questions.filter(q => q.type === "multi" && q.max).forEach(q => {
+      const boxes = [...form.querySelectorAll(`input[name="${q.id}"]`)];
+      const full = boxes.filter(b => b.checked).length >= q.max;
+      boxes.forEach(b => { b.disabled = full && !b.checked; b.closest(".chip").classList.toggle("off", b.disabled); });
+    });
+  }
+
+  function saveSurvey(form, part) {
+    for (const q of part.questions) {
+      if (q.type === "rank") {
+        for (let k = 1; k <= (q.count || 3); k++) {
+          const name = q.id + k;
+          state.surveyRaw[name] = { value: form.querySelector(`[name="${name}"]`).value, other: form.querySelector(`[data-for="${name}"]`).value.trim() };
+        }
+      } else if (q.type === "text") {
+        state.surveyRaw[q.id] = { value: form.querySelector(`[name="${q.id}"]`).value.trim() };
+      } else {
+        const values = [...form.querySelectorAll(`input[name="${q.id}"]:checked`)].map(b => b.value);
+        const other = form.querySelector(`[data-for="${q.id}"]`);
+        state.surveyRaw[q.id] = { values, other: other ? other.value.trim() : "" };
+      }
+    }
+  }
+
+  function restoreSurvey(form, part) {
+    for (const q of part.questions) {
+      if (q.type === "rank") {
+        for (let k = 1; k <= (q.count || 3); k++) {
+          const raw = state.surveyRaw[q.id + k];
+          if (!raw) continue;
+          form.querySelector(`[name="${q.id + k}"]`).value = raw.value;
+          form.querySelector(`[data-for="${q.id + k}"]`).value = raw.other || "";
+        }
+        continue;
+      }
+      const raw = state.surveyRaw[q.id];
+      if (!raw) continue;
+      if (q.type === "text") { form.querySelector(`[name="${q.id}"]`).value = raw.value; continue; }
+      form.querySelectorAll(`input[name="${q.id}"]`).forEach(b => { b.checked = raw.values.includes(b.value); });
+      const other = form.querySelector(`[data-for="${q.id}"]`);
+      if (other) other.value = raw.other || "";
+    }
+  }
+
+  // คืนค่าช่องแรกที่ยังตอบไม่ครบ หรือ null ถ้าครบแล้ว
+  function validateSurvey(form, part) {
+    let first = null;
+    for (const q of part.questions) {
+      const box = form.querySelector(`.q[data-id="${q.id}"]`), err = box.querySelector(".q-err");
+      let msg = "";
+      if (q.type === "single" || q.type === "multi") {
+        const raw = state.surveyRaw[q.id];
+        if (q.required && !raw.values.length) msg = "กรุณาเลือกคำตอบ";
+        else if (raw.values.includes(OTHER) && !raw.other) msg = "กรุณาระบุคำตอบในช่อง อื่น ๆ";
+      }
+      if (q.type === "rank") {
+        const picks = Array.from({ length: q.count || 3 }, (_, k) => state.surveyRaw[q.id + (k + 1)]);
+        const named = picks.map(r => r.value === OTHER ? "อื่น:" + r.other : r.value).filter(v => v && v !== "ยังไม่แน่ใจ");
+        if (q.required && !picks[0].value) msg = "กรุณาเลือกสาขาอันดับ 1";
+        else if (picks.some(r => r.value === OTHER && !r.other)) msg = "กรุณาพิมพ์ชื่อสาขาที่เลือก อื่น ๆ";
+        else if (new Set(named).size !== named.length) msg = "เลือกสาขาซ้ำกัน กรุณาเลือกสาขาที่ต่างกันในแต่ละอันดับ";
+      }
+      err.textContent = msg; err.hidden = !msg;
+      box.classList.toggle("invalid", !!msg);
+      if (msg && !first) first = box;
+    }
+    return first;
+  }
+
+  // แปลงคำตอบเป็นแถวเดียวสำหรับชีต
+  function flattenSurvey() {
+    const out = {};
+    const label = (q, v, other) => v === OTHER ? `${q.other}: ${other}` : v;
+    for (const part of GAME.survey.parts) for (const q of part.questions) {
+      if (q.type === "rank") {
+        for (let k = 1; k <= (q.count || 3); k++) {
+          const raw = state.surveyRaw[q.id + k] || { value: "" };
+          out[q.id + k] = raw.value ? label(q, raw.value, raw.other) : "";
+        }
+      } else if (q.type === "text") {
+        out[q.id] = (state.surveyRaw[q.id] || { value: "" }).value;
+      } else {
+        const raw = state.surveyRaw[q.id] || { values: [] };
+        out[q.id] = raw.values.map(v => label(q, v, raw.other)).join(" | ");
+      }
+    }
+    return out;
   }
 
   function renderProgress() {
@@ -637,7 +813,7 @@
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch (e) { return []; }
   }
   function writeQueue(items) {
-    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items.slice(-50))); } catch (e) { /* เบราว์เซอร์ไม่ให้เก็บ */ }
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items.slice(-500))); } catch (e) { /* เบราว์เซอร์ไม่ให้เก็บ */ }
   }
   async function post(record) {
     await fetch(GAME.endpoint, {
@@ -647,9 +823,9 @@
     });
   }
   async function send(fields) {
-    // ยังไม่เปิดเก็บข้อมูล จนกว่าจะใส่ endpoint ใน data.js
-    if (!GAME.endpoint) return;
     const record = { session: state.session, sentAt: new Date().toISOString(), ...fields };
+    // ยังไม่ใส่ endpoint ให้เก็บไว้ในเครื่องก่อน แล้วส่งเมื่อใส่ endpoint และเปิดเกมในเครื่องนี้อีกครั้ง
+    if (!GAME.endpoint) { writeQueue([...readQueue(), record]); return; }
     try { await post(record); } catch (e) { writeQueue([...readQueue(), record]); }
   }
   // ส่งข้อมูลที่ค้างอยู่อีกครั้ง เมื่ออินเทอร์เน็ตในงานกลับมา

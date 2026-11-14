@@ -113,7 +113,21 @@
     // เปลี่ยนอารมณ์เพลงตามฉาก (ใช้กับดนตรีสังเคราะห์)
     const mood = key => { if (mode === "synth") Synth.mood(key); };
     paint();
-    return { start, mood };
+    // ลองเปิดเพลงทันทีที่เข้าเว็บ คืนค่า true ถ้าเพลงดังแล้ว หรือผู้เล่นเคยปิดเสียงไว้เอง
+    async function autoplay() {
+      if (!S().music || muted) return true;
+      // ใส่ ?gate ท้ายลิงก์เพื่อดูหน้าแตะเพื่อเริ่มแบบที่มือถือจะเห็น
+      if (/[?&]gate(?:[=&]|$)/.test(location.search)) { start(); return false; }
+      start();
+      if (mode !== "file" || !audio) return false;
+      // บางเครื่องไม่ตอบทั้งอนุญาตและปฏิเสธ จึงรอไม่เกิน 1.5 วินาที
+      const ok = await Promise.race([audio.play().then(() => true, () => false), wait(1500).then(() => false)]);
+      if (ok) fadeFile(vol());
+      return ok && !audio.paused;
+    }
+    // ไว้ตรวจสถานะเพลงจากหน้า admin หรือคอนโซล
+    window.musicState = () => ({ mode, muted, paused: audio ? audio.paused : null, ready: audio ? audio.readyState : null, error: audio && audio.error ? audio.error.code : null });
+    return { start, mood, autoplay };
   })();
 
   // ชื่อแอปที่เปิดเว็บอยู่ข้างใน ซึ่งมักแชร์ไฟล์ลงสตอรี่ไม่ได้ (LINE เด้งไปเบราว์เซอร์หลักให้เองแล้ว)
@@ -861,6 +875,21 @@
   addEventListener("online", flush);
 
   Object.values(GAME.speakers).forEach(src => { new Image().src = src; });
-  Promise.all([Scenes.start(0), ENGINE.loadSheet()]).then(showIntro);
+  Promise.all([Scenes.start(0), ENGINE.loadSheet()]).then(() => {
+    showIntro();
+    // มือถือและเบราว์เซอร์ส่วนใหญ่ไม่ให้เปิดเสียงเองก่อนผู้ใช้แตะ ถ้าถูกกันไว้ ให้มีหน้าแตะเพื่อเริ่มที่เปิดเพลงในแตะเดียว
+    Music.autoplay().then(ok => { if (!ok) showGate(); });
+  });
+
+  function showGate() {
+    const gate = document.createElement("button");
+    gate.type = "button";
+    gate.className = "gate";
+    gate.setAttribute("aria-label", "แตะเพื่อเริ่มพร้อมเพลง");
+    gate.innerHTML = `<span class="gate-title">${esc(S().title)}</span><span class="gate-tap">แตะที่ใดก็ได้เพื่อเริ่มตำนาน</span><span class="gate-sound">♪ เปิดเสียงเพื่อฟังเพลงประกอบ</span>`;
+    const open = () => { gate.classList.add("out"); setTimeout(() => gate.remove(), 450); };
+    gate.addEventListener("click", open, { once: true });
+    document.body.append(gate);
+  }
   flush();
 })();

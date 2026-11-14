@@ -2,7 +2,7 @@
 # ใช้งาน: python tools/bump-version.py
 import os, re, time
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-new = time.strftime("%Y%m%d%H%M")
+new = time.strftime("%Y%m%d%H%M%S")
 for name in ("index.html", "admin.html"):
     p = os.path.join(root, name)
     s = open(p, encoding="utf-8").read()

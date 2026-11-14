@@ -1,7 +1,7 @@
 // ค่าเริ่มต้นของเกม ทีมปรับได้จากชีตตั้งค่าโดยไม่ต้องแก้ไฟล์นี้ (ดู README.md)
 const GAME = {
   // วาง URL ของ Google Apps Script ที่นี่เมื่อพร้อมเก็บข้อมูล ถ้าเว้นว่าง เกมจะไม่เก็บข้อมูลและไม่ถามชั้นปี
-  endpoint: "",
+  endpoint: "https://script.google.com/macros/s/AKfycbypWA4X4AvJEOH_gWoHwk_GaHu55uni9Z0Jk74da69bn7-8ustDUg5KRYLdyYesFK0D/exec",
   audience: ["ปี 1", "ปี 2", "ปี 3", "ปี 4", "ปี 5", "ปี 6", "แพทย์ใช้ทุน", "อื่น ๆ"],
 
   // ลิงก์ CSV ของแต่ละแท็บในชีต จาก ไฟล์ > แชร์ > เผยแพร่ไปยังเว็บ ถ้าเว้นว่างจะใช้ค่าในไฟล์นี้
